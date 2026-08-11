@@ -20,6 +20,17 @@ if (canvasFontDescriptor?.set && canvasFontDescriptor?.get) {
   });
 }
 
+// Capture the prototype camera position so this entry module can expose a true BACK view
+// without touching the locked geometry file.
+const originalVectorSet = THREE.Vector3.prototype.set;
+let prototypeCameraPosition = null;
+THREE.Vector3.prototype.set = function(x, y, z) {
+  if (x === 175 && y === 110 && z === 220 && !prototypeCameraPosition) {
+    prototypeCameraPosition = this;
+  }
+  return originalVectorSet.call(this, x, y, z);
+};
+
 // Right side: show the active state only.
 const originalFillText = CanvasRenderingContext2D.prototype.fillText;
 CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
@@ -65,7 +76,12 @@ function makeMicroTextMaterial(lines) {
 
 function addFilmFrame(lidGroup, lidSize) {
   const loader = new THREE.TextureLoader();
-  const texture = loader.load('./assets/kenopsia-film-frame.jpg');
+  const texture = loader.load(
+    './assets/kenopsia-film-frame.jpg',
+    () => { texture.needsUpdate = true; },
+    undefined,
+    (err) => console.error('KENOPSIA film frame failed to load', err)
+  );
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
 
@@ -75,27 +91,28 @@ function addFilmFrame(lidGroup, lidSize) {
     side: THREE.DoubleSide,
   });
 
-  // Large vertical campaign still: almost the whole back, but not a label panel.
-  const image = new THREE.Mesh(new THREE.PlaneGeometry(64, 50), imageMat);
-  image.position.set(0, lidSize.y * 0.59, -lidSize.z / 2 - 0.125);
+  // Campaign still: large enough to unmistakably read as the Volume's film frame.
+  // The supplied image is ~4:3, so 72 × 54 preserves its composition without stretching.
+  const image = new THREE.Mesh(new THREE.PlaneGeometry(72, 54), imageMat);
+  image.position.set(0, 44.5, -lidSize.z / 2 - 0.24);
   image.rotation.y = Math.PI;
-  image.renderOrder = 28;
+  image.renderOrder = 40;
   image.userData.isLabel = true;
   image.userData.isFilmFrame = true;
   lidGroup.add(image);
 
   // Small fashion-film index beneath the still.
   const meta = new THREE.Mesh(
-    new THREE.PlaneGeometry(54, 8.5),
+    new THREE.PlaneGeometry(56, 8.5),
     makeMicroTextMaterial([
       'VOLUME I — KENOPSIA',
       'FILM 01 / FRAME 0047',
       'TWYNEHAUS.COM',
     ])
   );
-  meta.position.set(0, 8.7, -lidSize.z / 2 - 0.13);
+  meta.position.set(0, 9.5, -lidSize.z / 2 - 0.25);
   meta.rotation.y = Math.PI;
-  meta.renderOrder = 32;
+  meta.renderOrder = 42;
   meta.userData.isLabel = true;
   meta.userData.isFilmMeta = true;
   lidGroup.add(meta);
@@ -132,3 +149,14 @@ THREE.Group.prototype.add = function(...objects) {
 await document.fonts?.load?.('600 90px \"Manrope\"');
 await document.fonts?.ready;
 await import('./main-v2.js');
+
+// Open directly on a back three-quarter view for this packaging review,
+// so the film artwork is visible immediately after refresh.
+if (prototypeCameraPosition) {
+  originalVectorSet.call(prototypeCameraPosition, 175, 105, -225);
+}
+
+document.getElementById('btn-cam-back')?.addEventListener('click', () => {
+  if (!prototypeCameraPosition) return;
+  originalVectorSet.call(prototypeCameraPosition, 0, 55, -290);
+});
