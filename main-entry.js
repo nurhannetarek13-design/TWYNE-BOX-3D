@@ -108,16 +108,13 @@ function makeBetweenLensMaterial() {
     ctx.restore();
   }
 
-  // Upper-left lip catches light; lower-right wall carries the recess.
-  drawLens(-4.0, -4.0, 'rgba(246,246,239,0.105)');
-  drawLens(5.5, 5.5, 'rgba(0,0,0,0.48)');
+  // Fine light lip + deeper lower wall = pressed paper, not a graphic.
+  drawLens(-4.0, -4.0, 'rgba(246,246,239,0.09)');
+  drawLens(5.5, 5.5, 'rgba(0,0,0,0.50)');
+  drawLens(0, 0, 'rgba(5,5,4,0.24)');
 
-  // Compressed same-colour floor: intentionally subtle, never black ink.
-  drawLens(0, 0, 'rgba(5,5,4,0.22)');
-
-  // A second, very fine inner lip keeps it dimensional at close range.
   ctx.save();
-  ctx.strokeStyle = 'rgba(245,245,238,0.075)';
+  ctx.strokeStyle = 'rgba(245,245,238,0.06)';
   ctx.lineWidth = 3;
   ctx.stroke(lens);
   ctx.restore();
@@ -136,13 +133,13 @@ function makeBetweenLensMaterial() {
 }
 
 function addBetweenLens(lidGroup, lidSize) {
-  const geometry = new THREE.PlaneGeometry(38, 16);
-  // Rotate the silhouette within its own plane before laying it onto the lid.
-  geometry.rotateZ(-0.16);
+  const geometry = new THREE.PlaneGeometry(42, 18);
+  // Slight rotation keeps the gesture architectural rather than emblem-like.
+  geometry.rotateZ(-0.13);
 
   const mesh = new THREE.Mesh(geometry, makeBetweenLensMaterial());
-  // Front-right quadrant: far enough from the centered TWYNE wordmark to stay quiet.
-  mesh.position.set(18, lidSize.y + 0.125, 18.5);
+  // Off-centre and almost touching the right edge; the wordmark remains the hero.
+  mesh.position.set(22.5, lidSize.y + 0.125, 14.5);
   mesh.rotation.x = -Math.PI / 2;
   mesh.userData.isLabel = true;
   mesh.userData.isBetweenLens = true;
