@@ -138,7 +138,7 @@ const matRecess = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 });
 
-// Recessed line treatment — tonal, never printed-looking.
+// Double recessed line system.
 const matFrameShadow = new THREE.MeshBasicMaterial({
   color: 0x1f2022,
   transparent: true,
@@ -155,24 +155,39 @@ const matFrameHighlight = new THREE.MeshBasicMaterial({
   side: THREE.DoubleSide,
 });
 
-// Exact custom TWYNE artwork.
-const wordmarkTexture = new THREE.TextureLoader().load('./assets/twyne-wordmark.svg');
+// Exact TWYNE custom wordmark embedded as a data URL so it always loads locally.
+const wordmarkSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 766 75">
+  <g fill="white">
+    <path d="M 0 0 L 0 24 L 43 24 L 44 25 L 44 74 L 72 74 L 72 25 L 73 24 L 116 24 L 116 0 Z"/>
+    <path d="M 147 0 L 162 35 L 168 52 L 171 57 L 177 74 L 215 74 L 235 29 L 237 30 L 256 74 L 293 74 L 299 62 L 324 0 L 292 0 L 275 42 L 268 31 L 268 29 L 266 27 L 253 0 L 218 0 L 214 10 L 212 12 L 212 14 L 210 16 L 210 18 L 199 40 L 197 42 L 195 40 L 179 0 Z"/>
+    <path d="M 356 0 L 403 48 L 403 74 L 429 74 L 429 48 L 476 0 L 443 0 L 417 26 L 413 24 L 390 0 Z"/>
+    <path d="M 508 0 L 508 74 L 536 74 L 536 31 L 537 30 L 592 74 L 624 74 L 624 0 L 596 0 L 596 41 L 595 42 L 591 40 L 541 0 Z"/>
+    <path d="M 664 0 L 664 74 L 765 74 L 765 52 L 693 52 L 692 51 L 692 47 L 694 45 L 745 45 L 745 28 L 693 28 L 692 23 L 693 22 L 765 22 L 765 0 Z"/>
+  </g>
+</svg>`;
+
+const wordmarkTexture = new THREE.TextureLoader().load(
+  `data:image/svg+xml;charset=utf-8,${encodeURIComponent(wordmarkSvg)}`
+);
 wordmarkTexture.colorSpace = THREE.SRGBColorSpace;
 
 const matWordmarkShadow = new THREE.MeshBasicMaterial({
   map: wordmarkTexture,
-  color: 0x151618,
+  color: 0x0d0e0f,
   transparent: true,
-  opacity: 0.72,
+  opacity: 0.92,
+  alphaTest: 0.02,
   depthWrite: false,
   side: THREE.DoubleSide,
 });
 
 const matWordmarkHighlight = new THREE.MeshBasicMaterial({
   map: wordmarkTexture,
-  color: 0xa1a2a4,
+  color: 0xd0d1d2,
   transparent: true,
-  opacity: 0.13,
+  opacity: 0.18,
+  alphaTest: 0.02,
   depthWrite: false,
   side: THREE.DoubleSide,
 });
@@ -290,6 +305,8 @@ function addLabel(parent, lines, {
   return mesh;
 }
 
+// Wordmark is built in a local group so its relief offset always moves OUTWARD
+// from the face — including the horizontal top face.
 function addWordmark(parent, {
   w,
   h,
@@ -300,19 +317,24 @@ function addWordmark(parent, {
   ry = 0,
   rz = 0,
 }) {
+  const group = new THREE.Group();
+  group.position.set(x, y, z);
+  group.rotation.set(rx, ry, rz);
+  parent.add(group);
+
   const hi = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matWordmarkHighlight);
-  hi.position.set(x - 0.08, y + 0.08, z);
-  hi.rotation.set(rx, ry, rz);
+  hi.position.set(-0.08, 0.08, 0.028);
   hi.userData.isLabel = true;
-  hi.renderOrder = 18;
-  parent.add(hi);
+  hi.renderOrder = 28;
+  group.add(hi);
 
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matWordmarkShadow);
-  shadow.position.set(x + 0.06, y - 0.06, z + 0.008);
-  shadow.rotation.set(rx, ry, rz);
+  shadow.position.set(0.06, -0.06, 0.045);
   shadow.userData.isLabel = true;
-  shadow.renderOrder = 19;
-  parent.add(shadow);
+  shadow.renderOrder = 29;
+  group.add(shadow);
+
+  return group;
 }
 
 // ─── Double recessed panel system ────────────────────────────────────────────
@@ -447,6 +469,7 @@ function buildBox() {
   recessMesh.position.set(0, seamY + recessT / 2, 0);
   rootGroup.add(recessMesh);
 
+  // Bottle placeholder — locked proportions.
   const bW = 49.07;
   const bD = 49.60;
   const bBodyH = 49.68;
@@ -509,18 +532,17 @@ function buildBox() {
 
   lidGroup.position.y = seamY + C;
 
-  // Double recessed panel language on every lid face + top.
+  // Double recessed panel language on all lid faces + top.
   addAllLidFrames(lidGroup, W, D, lidBlockH);
 
   const SURFACE_OFFSET = 0.135;
 
-  // TOP — TWYNE is the hero face, using the exact custom wordmark.
-  // Width nearly fills the inner recessed panel, like the supplied reference.
+  // TOP — hero TWYNE wordmark. Large, centered, definitely above the surface.
   addWordmark(lidGroup, {
-    w: 66,
-    h: 6.46,
+    w: 69,
+    h: 6.75,
     x: 0,
-    y: lidBlockH + SURFACE_OFFSET + 0.02,
+    y: lidBlockH + SURFACE_OFFSET + 0.06,
     z: 0,
     rx: -Math.PI / 2,
   });
