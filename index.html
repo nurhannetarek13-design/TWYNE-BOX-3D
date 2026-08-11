@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TWYNE — Box Prototype</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="panel">
+    <h1>TWYNE</h1>
+    <p class="subtitle">Box Prototype</p>
+
+    <div class="section-label">Colour</div>
+
+    <div class="color-ab">
+      <button id="btn-a" class="ab-btn">A — Warm Ash</button>
+      <button id="btn-b" class="ab-btn">B — Sora Dora</button>
+      <button id="btn-c" class="ab-btn active">C — Gunmetal</button>
+    </div>
+
+    <div class="section-label">Dimensions (mm)</div>
+
+    <label>Width (lid outer)
+      <input type="number" id="ctrl-width" value="90" min="20" max="300" step="1" />
+    </label>
+    <label>Depth (lid outer)
+      <input type="number" id="ctrl-depth" value="90" min="20" max="300" step="1" />
+    </label>
+    <label>Total Height
+      <input type="number" id="ctrl-height" value="92" min="40" max="400" step="1" />
+    </label>
+    <label>Lid Skirt Height
+      <input type="number" id="ctrl-lidH" value="76" min="10" max="150" step="1" />
+    </label>
+    <label>Board Thickness
+      <input type="number" id="ctrl-board" value="2.5" min="0.5" max="8" step="0.5" />
+    </label>
+    <label>Clearance (per side)
+      <input type="number" id="ctrl-clear" value="0.8" min="0.1" max="4" step="0.05" />
+    </label>
+
+    <div class="section-label">Camera</div>
+    <div class="cam-presets">
+      <button id="btn-cam-front" class="cam-btn">Front</button>
+      <button id="btn-cam-3q"    class="cam-btn">3/4</button>
+      <button id="btn-cam-side"  class="cam-btn">Side</button>
+      <button id="btn-cam-top"   class="cam-btn">Top</button>
+    </div>
+
+    <div class="section-label">View</div>
+    <button id="btn-matcheck" class="ab-btn" style="width:100%;margin-bottom:5px">Material Check</button>
+    <button id="btn-section" class="ab-btn" style="width:100%">Section: OFF</button>
+
+    <div class="section-label">Lid — Open / Close</div>
+
+    <label class="slider-label">Closed
+      <input type="range" id="ctrl-open" min="0" max="1" step="0.01" value="0" />
+      Open
+    </label>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
