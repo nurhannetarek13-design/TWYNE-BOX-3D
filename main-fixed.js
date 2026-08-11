@@ -23,7 +23,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.88;
+renderer.toneMappingExposure = 0.90;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.localClippingEnabled = true;
 
@@ -42,9 +42,9 @@ controls.maxDistance = 900;
 controls.target.set(0, 46, 0);
 
 // ─── Lighting ────────────────────────────────────────────────────────────────
-scene.add(new THREE.AmbientLight(0xf8f8f8, 0.30));
+scene.add(new THREE.AmbientLight(0xf8f8f8, 0.28));
 
-const keyLight = new THREE.DirectionalLight(0xfff0e8, 0.78);
+const keyLight = new THREE.DirectionalLight(0xfff0e8, 0.82);
 keyLight.position.set(160, 380, 180);
 keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(2048, 2048);
@@ -55,11 +55,11 @@ ksc.near = 10;
 ksc.far = 900;
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0xe4ecff, 0.28);
+const fillLight = new THREE.DirectionalLight(0xe4ecff, 0.23);
 fillLight.position.set(-280, 200, 80);
 scene.add(fillLight);
 
-const kickLight = new THREE.DirectionalLight(0xffd8b8, 0.50);
+const kickLight = new THREE.DirectionalLight(0xffd8b8, 0.46);
 kickLight.position.set(-60, 220, -320);
 scene.add(kickLight);
 
@@ -72,7 +72,7 @@ groundMesh.receiveShadow = true;
 scene.add(groundMesh);
 
 // ─── Materials ───────────────────────────────────────────────────────────────
-function makeTex(r0, g0, b0, amp, rg, rb) {
+function makeTex(r0, g0, b0, amp = 8, rg = 1, rb = 1) {
   const sz = 1024;
   const cv = document.createElement('canvas');
   cv.width = cv.height = sz;
@@ -94,6 +94,7 @@ function makeTex(r0, g0, b0, amp, rg, rb) {
   const tex = new THREE.CanvasTexture(cv);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(3, 3);
+  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
@@ -109,14 +110,14 @@ const matSoraDora = new THREE.MeshStandardMaterial({
   metalness: 0,
 });
 
-// Exact current TWYNE box color.
-const matTwyneGrey = new THREE.MeshStandardMaterial({
-  color: 0x454649,
-  roughness: 0.84,
+// LOCKED EDP exterior: Mineral Graphite #4D4D49.
+const matMineralGraphite = new THREE.MeshStandardMaterial({
+  map: makeTex(0x4D, 0x4D, 0x49, 5, 0.96, 0.88),
+  roughness: 0.90,
   metalness: 0,
 });
 
-let boxMat = matTwyneGrey;
+let boxMat = matMineralGraphite;
 
 const matGlass = new THREE.MeshPhysicalMaterial({
   color: 0xf2ede0,
@@ -140,65 +141,19 @@ const matRecess = new THREE.MeshStandardMaterial({
   metalness: 0,
 });
 
+// Blind recessed frame: dark inner wall + a tiny opposing light lip.
 const matFrameShadow = new THREE.MeshBasicMaterial({
-  color: 0x1f2022,
+  color: 0x1d1e1c,
   transparent: true,
-  opacity: 0.46,
+  opacity: 0.35,
   depthWrite: false,
   side: THREE.DoubleSide,
 });
 
 const matFrameHighlight = new THREE.MeshBasicMaterial({
-  color: 0x8a8b8d,
+  color: 0xc0c0ba,
   transparent: true,
-  opacity: 0.12,
-  depthWrite: false,
-  side: THREE.DoubleSide,
-});
-
-// ─── TWYNE exact wordmark texture, drawn synchronously on canvas ─────────────
-// This avoids SVG/image loading entirely, so the wordmark cannot disappear.
-function makeWordmarkTexture() {
-  const cv = document.createElement('canvas');
-  cv.width = 1532;
-  cv.height = 150;
-  const ctx = cv.getContext('2d');
-  ctx.clearRect(0, 0, cv.width, cv.height);
-  ctx.scale(2, 2);
-  ctx.fillStyle = '#ffffff';
-
-  const paths = [
-    'M 0 0 L 0 24 L 43 24 L 44 25 L 44 74 L 72 74 L 72 25 L 73 24 L 116 24 L 116 0 Z',
-    'M 147 0 L 162 35 L 168 52 L 171 57 L 177 74 L 215 74 L 235 29 L 237 30 L 256 74 L 293 74 L 299 62 L 324 0 L 292 0 L 275 42 L 268 31 L 268 29 L 266 27 L 253 0 L 218 0 L 214 10 L 212 12 L 212 14 L 210 16 L 210 18 L 199 40 L 197 42 L 195 40 L 179 0 Z',
-    'M 356 0 L 403 48 L 403 74 L 429 74 L 429 48 L 476 0 L 443 0 L 417 26 L 413 24 L 390 0 Z',
-    'M 508 0 L 508 74 L 536 74 L 536 31 L 537 30 L 592 74 L 624 74 L 624 0 L 596 0 L 596 41 L 595 42 L 591 40 L 541 0 Z',
-    'M 664 0 L 664 74 L 765 74 L 765 52 L 693 52 L 692 51 L 692 47 L 694 45 L 745 45 L 745 28 L 693 28 L 692 23 L 693 22 L 765 22 L 765 0 Z',
-  ];
-
-  paths.forEach(d => ctx.fill(new Path2D(d)));
-
-  const tex = new THREE.CanvasTexture(cv);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-const wordmarkTexture = makeWordmarkTexture();
-
-const matWordmarkShadow = new THREE.MeshBasicMaterial({
-  map: wordmarkTexture,
-  color: 0x101113,
-  transparent: true,
-  opacity: 0.98,
-  depthWrite: false,
-  side: THREE.DoubleSide,
-});
-
-const matWordmarkHighlight = new THREE.MeshBasicMaterial({
-  map: wordmarkTexture,
-  color: 0xb8b9bb,
-  transparent: true,
-  opacity: 0.25,
+  opacity: 0.075,
   depthWrite: false,
   side: THREE.DoubleSide,
 });
@@ -212,18 +167,17 @@ let checkActive = false;
 let sectionActive = false;
 const sectionPlane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
 
-// ─── Typography / blind-deboss preview ───────────────────────────────────────
-function makeTextMaterial(lines, {
+// ─── Blind-deboss typography ─────────────────────────────────────────────────
+function makeDebossTextMaterial(lines, {
   width = 1024,
   height = 256,
   padding = 56,
   fontSize = 78,
   leading = 1.12,
-  align = 'left',
-  colorDark = 'rgba(8,8,8,0.56)',
-  colorLight = 'rgba(255,255,255,0.09)',
+  align = 'center',
   fontFamily = 'Arial, Helvetica, sans-serif',
-  fontWeight = '500',
+  fontWeight = '600',
+  depth = 0.55,
 } = {}) {
   const cv = document.createElement('canvas');
   cv.width = width;
@@ -247,10 +201,18 @@ function makeTextMaterial(lines, {
   const lineH = fontSize * leading;
   const totalH = lines.length * lineH;
   const y0 = (height - totalH) / 2;
+  const edge = Math.max(1.2, 2.8 * depth);
 
-  ctx.fillStyle = colorLight;
-  lines.forEach((line, i) => ctx.fillText(line, x + 2, y0 + i * lineH + 2));
-  ctx.fillStyle = colorDark;
+  // lower/right inner lip catches light
+  ctx.fillStyle = `rgba(235,235,228,${0.11 * depth})`;
+  lines.forEach((line, i) => ctx.fillText(line, x + edge, y0 + i * lineH + edge));
+
+  // upper/left inner wall drops into shadow
+  ctx.fillStyle = `rgba(0,0,0,${0.34 * depth})`;
+  lines.forEach((line, i) => ctx.fillText(line, x - edge, y0 + i * lineH - edge));
+
+  // recessed floor: no ink color, only compressed tone
+  ctx.fillStyle = `rgba(10,10,9,${0.22 + 0.16 * depth})`;
   lines.forEach((line, i) => ctx.fillText(line, x, y0 + i * lineH));
 
   const tex = new THREE.CanvasTexture(cv);
@@ -262,18 +224,20 @@ function makeTextMaterial(lines, {
     transparent: true,
     depthWrite: false,
     side: THREE.DoubleSide,
+    toneMapped: false,
   });
 }
 
-function addLabel(parent, lines, {
+function addDebossLabel(parent, lines, {
   w, h,
   x = 0, y = 0, z = 0,
   rx = 0, ry = 0, rz = 0,
+  depth = 0.55,
   ...textOpts
 }) {
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(w, h),
-    makeTextMaterial(lines, textOpts)
+    makeDebossTextMaterial(lines, { ...textOpts, depth })
   );
   mesh.position.set(x, y, z);
   mesh.rotation.set(rx, ry, rz);
@@ -283,31 +247,72 @@ function addLabel(parent, lines, {
   return mesh;
 }
 
-function addWordmark(parent, {
+// Exact custom TWYNE paths — drawn directly, no SVG loading.
+const TWYNE_PATHS = [
+  'M 0 0 L 0 24 L 43 24 L 44 25 L 44 74 L 72 74 L 72 25 L 73 24 L 116 24 L 116 0 Z',
+  'M 147 0 L 162 35 L 168 52 L 171 57 L 177 74 L 215 74 L 235 29 L 237 30 L 256 74 L 293 74 L 299 62 L 324 0 L 292 0 L 275 42 L 268 31 L 268 29 L 266 27 L 253 0 L 218 0 L 214 10 L 212 12 L 212 14 L 210 16 L 210 18 L 199 40 L 197 42 L 195 40 L 179 0 Z',
+  'M 356 0 L 403 48 L 403 74 L 429 74 L 429 48 L 476 0 L 443 0 L 417 26 L 413 24 L 390 0 Z',
+  'M 508 0 L 508 74 L 536 74 L 536 31 L 537 30 L 592 74 L 624 74 L 624 0 L 596 0 L 596 41 L 595 42 L 591 40 L 541 0 Z',
+  'M 664 0 L 664 74 L 765 74 L 765 52 L 693 52 L 692 51 L 692 47 L 694 45 L 745 45 L 745 28 L 693 28 L 692 23 L 693 22 L 765 22 L 765 0 Z',
+];
+
+function makeWordmarkDebossMaterial(depth = 1) {
+  const cv = document.createElement('canvas');
+  cv.width = 1536;
+  cv.height = 256;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  const paths = TWYNE_PATHS.map(d => new Path2D(d));
+  const targetW = 1340;
+  const scale = targetW / 766;
+  const markH = 75 * scale;
+  const ox = (cv.width - targetW) / 2;
+  const oy = (cv.height - markH) / 2;
+  const edge = 2.4 * depth;
+
+  function draw(dx, dy, fill) {
+    ctx.save();
+    ctx.translate(ox + dx, oy + dy);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = fill;
+    paths.forEach(p => ctx.fill(p));
+    ctx.restore();
+  }
+
+  draw(edge, edge, `rgba(235,235,228,${0.15 * depth})`);
+  draw(-edge, -edge, `rgba(0,0,0,${0.48 * depth})`);
+  draw(0, 0, `rgba(8,8,7,${0.40 * depth})`);
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+
+  return new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
+
+function addDebossWordmark(parent, {
   w, h,
   x = 0, y = 0, z = 0,
   rx = 0, ry = 0, rz = 0,
+  depth = 1,
 }) {
-  const group = new THREE.Group();
-  group.position.set(x, y, z);
-  group.rotation.set(rx, ry, rz);
-  parent.add(group);
-
-  // Soft highlight lip.
-  const hi = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matWordmarkHighlight);
-  hi.position.set(-0.10, 0.10, 0.05);
-  hi.userData.isLabel = true;
-  hi.renderOrder = 28;
-  group.add(hi);
-
-  // Dark carved core.
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matWordmarkShadow);
-  shadow.position.set(0.08, -0.08, 0.09);
-  shadow.userData.isLabel = true;
-  shadow.renderOrder = 29;
-  group.add(shadow);
-
-  return group;
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, h),
+    makeWordmarkDebossMaterial(depth)
+  );
+  mesh.position.set(x, y, z);
+  mesh.rotation.set(rx, ry, rz);
+  mesh.userData.isLabel = true;
+  mesh.renderOrder = 24;
+  parent.add(mesh);
+  return mesh;
 }
 
 // ─── Double recessed panel system ────────────────────────────────────────────
@@ -319,14 +324,14 @@ function addReliefStrip(parent, w, h, x, y, orientation = 'horizontal') {
   parent.add(shadow);
 
   const hiGeo = orientation === 'vertical'
-    ? new THREE.PlaneGeometry(w * 0.42, h)
-    : new THREE.PlaneGeometry(w, h * 0.42);
+    ? new THREE.PlaneGeometry(w * 0.40, h)
+    : new THREE.PlaneGeometry(w, h * 0.40);
 
   const hi = new THREE.Mesh(hiGeo, matFrameHighlight);
   if (orientation === 'vertical') {
-    hi.position.set(x + 0.10, y, 0.008);
+    hi.position.set(x + 0.09, y, 0.006);
   } else {
-    hi.position.set(x, y + 0.10, 0.008);
+    hi.position.set(x, y + 0.09, 0.006);
   }
   hi.userData.isGroove = true;
   hi.renderOrder = 9;
@@ -355,12 +360,13 @@ function addDoubleFrameFace(parent, {
   face.rotation.set(rx, ry, rz);
   parent.add(face);
 
-  addRectFrame2D(face, Math.max(faceW - 14, 2), Math.max(faceH - 14, 2), 0.34);
-  addRectFrame2D(face, Math.max(faceW - 21, 2), Math.max(faceH - 21, 2), 0.24);
+  // 7 mm outer inset, then 3.5 mm to the inner parallel rule.
+  addRectFrame2D(face, Math.max(faceW - 14, 2), Math.max(faceH - 14, 2), 0.28);
+  addRectFrame2D(face, Math.max(faceW - 21, 2), Math.max(faceH - 21, 2), 0.18);
 }
 
 function addAllLidFrames(parent, W, D, lidBlockH) {
-  const o = 0.105;
+  const o = 0.108;
   const cy = lidBlockH / 2;
 
   addDoubleFrameFace(parent, { faceW: W, faceH: lidBlockH, y: cy, z: D / 2 + o });
@@ -388,13 +394,13 @@ function buildBox() {
   baseMesh.receiveShadow = true;
   rootGroup.add(baseMesh);
 
-  // Recess marker.
+  // Bottle recess marker.
   const recessT = 0.3;
   const recessMesh = new THREE.Mesh(new THREE.BoxGeometry(50, recessT, 50), matRecess);
   recessMesh.position.set(0, seamY + recessT / 2, 0);
   rootGroup.add(recessMesh);
 
-  // Bottle placeholder.
+  // Bottle placeholder — locked proportions.
   const bW = 49.07;
   const bD = 49.60;
   const bBodyH = 49.68;
@@ -440,89 +446,96 @@ function buildBox() {
   lidGroup.add(lidMesh);
   lidGroup.position.y = seamY + C;
 
+  // Recessed construction frame across the whole lid object.
   addAllLidFrames(lidGroup, W, D, lidBlockH);
 
-  const SURFACE_OFFSET = 0.16;
+  const S = 0.145;
 
-  // TOP — TWYNE hero. Synchronous canvas texture + generous surface lift.
-  addWordmark(lidGroup, {
-    w: 76,
-    h: 7.44,
+  // TOP — deepest hero blind deboss.
+  addDebossWordmark(lidGroup, {
+    w: 69,
+    h: 6.75,
     x: 0,
-    y: lidBlockH + 0.32,
+    y: lidBlockH + S,
     z: 0,
     rx: -Math.PI / 2,
+    depth: 1.0,
   });
 
-  // FRONT — collection identity.
-  addLabel(lidGroup, ['VOLUME I', 'KENOPSIA'], {
-    w: 56,
-    h: 19,
+  // FRONT — medium blind deboss.
+  addDebossLabel(lidGroup, ['VOLUME I', 'KENOPSIA'], {
+    w: 54,
+    h: 18,
     x: 0,
     y: lidBlockH / 2,
-    z: D / 2 + SURFACE_OFFSET,
-    fontSize: 122,
-    leading: 1.10,
+    z: D / 2 + S,
+    fontSize: 118,
+    leading: 1.12,
+    align: 'center',
+    padding: 22,
+    fontWeight: '600',
+    depth: 0.68,
+  });
+
+  // BACK — quieter house code.
+  addDebossLabel(lidGroup, ['TWO STATES.', 'A THIRD FORM.'], {
+    w: 58,
+    h: 18,
+    x: 0,
+    y: lidBlockH / 2,
+    z: -D / 2 - S,
+    ry: Math.PI,
+    fontSize: 108,
+    leading: 1.14,
     align: 'center',
     padding: 18,
     fontWeight: '600',
+    depth: 0.54,
   });
 
-  // BACK — house code.
-  addLabel(lidGroup, ['TWO STATES.', 'A THIRD FORM.'], {
-    w: 60,
-    h: 19,
-    x: 0,
-    y: lidBlockH / 2,
-    z: -D / 2 - SURFACE_OFFSET,
-    ry: Math.PI,
-    fontSize: 112,
-    leading: 1.12,
-    align: 'center',
-    padding: 16,
-    fontWeight: '600',
-  });
-
-  // LEFT — state.
-  addLabel(lidGroup, ['STATE / LIGHT'], {
-    w: 48,
+  // LEFT — micro blind deboss.
+  addDebossLabel(lidGroup, ['STATE / LIGHT'], {
+    w: 46,
     h: 10,
-    x: -W / 2 - SURFACE_OFFSET,
+    x: -W / 2 - S,
     y: lidBlockH / 2,
     z: 0,
     ry: -Math.PI / 2,
-    fontSize: 112,
+    fontSize: 108,
     align: 'center',
-    padding: 14,
+    padding: 16,
     fontWeight: '600',
+    depth: 0.46,
   });
 
-  // RIGHT — house descriptor.
-  addLabel(lidGroup, ['A HAUS OF VOLUMES'], {
-    w: 56,
+  // RIGHT — micro blind deboss.
+  addDebossLabel(lidGroup, ['A HAUS OF VOLUMES'], {
+    w: 54,
     h: 10,
-    x: W / 2 + SURFACE_OFFSET,
+    x: W / 2 + S,
     y: lidBlockH / 2,
     z: 0,
     ry: Math.PI / 2,
-    fontSize: 96,
+    fontSize: 92,
     align: 'center',
-    padding: 12,
+    padding: 14,
     fontWeight: '600',
+    depth: 0.46,
   });
 
-  // Thin base — technical information.
-  addLabel(rootGroup, ['PERFUME / PARFUM', '50 ML / 1.7 FL. OZ.'], {
+  // THIN BASE — shallowest technical blind deboss.
+  addDebossLabel(rootGroup, ['PERFUME / PARFUM', '50 ML / 1.7 FL. OZ.'], {
     w: 46,
     h: 11,
     x: 0,
     y: seamY / 2,
-    z: D / 2 + SURFACE_OFFSET,
+    z: D / 2 + S,
     fontSize: 70,
     leading: 1.14,
     align: 'center',
     padding: 16,
     fontWeight: '600',
+    depth: 0.38,
   });
 
   controls.target.set(0, H / 2, 0);
@@ -632,7 +645,7 @@ function setColor(mat, active) {
 
 btnA?.addEventListener('click', () => setColor(matWarmAsh, btnA));
 btnB?.addEventListener('click', () => setColor(matSoraDora, btnB));
-btnC?.addEventListener('click', () => setColor(matTwyneGrey, btnC));
+btnC?.addEventListener('click', () => setColor(matMineralGraphite, btnC));
 
 document.getElementById('btn-matcheck')?.addEventListener('click', toggleCheck);
 
