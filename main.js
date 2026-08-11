@@ -153,8 +153,15 @@ function applyMaterial(mat) {
   boxMat = mat;
   if (!rootGroup) return;
   rootGroup.traverse(obj => {
-    if (obj.isMesh && obj.material !== matGlass && obj.material !== matCap && obj.material !== matRecess)
+    if (
+      obj.isMesh &&
+      !obj.userData.isLabel &&
+      obj.material !== matGlass &&
+      obj.material !== matCap &&
+      obj.material !== matRecess
+    ) {
       obj.material = checkActive ? matBasicCheck : mat;
+    }
   });
 }
 
@@ -167,10 +174,10 @@ function toggleCheck() {
   const btn = document.getElementById('btn-matcheck');
   btn.textContent = checkActive ? 'Check: ON – lighting OFF' : 'Material Check';
   btn.classList.toggle('active', checkActive);
-  // swap every exterior mesh; non-exterior mats are unchanged
+  // swap every exterior mesh; non-exterior mats and typography are unchanged
   const skip = new Set([matGlass, matCap, matRecess]);
   if (rootGroup) rootGroup.traverse(obj => {
-    if (!obj.isMesh || skip.has(obj.material)) return;
+    if (!obj.isMesh || obj.userData.isLabel || skip.has(obj.material)) return;
     obj.material = checkActive ? matBasicCheck : boxMat;
   });
 }
@@ -186,6 +193,84 @@ function slab(group, w, h, d, x, y, z) {
   mesh.castShadow    = true;
   mesh.receiveShadow = true;
   group.add(mesh);
+}
+
+// ─── Typography / blind-deboss preview ───────────────────────────────────────
+// This is a placement study, not the final physical deboss geometry.
+// It uses a tiny dark shadow + pale edge to mimic a blind impression under light.
+function makeTextMaterial(lines, {
+  width = 1024,
+  height = 256,
+  padding = 56,
+  fontSize = 78,
+  leading = 1.12,
+  align = 'left',
+  colorDark = 'rgba(8,8,8,0.48)',
+  colorLight = 'rgba(255,255,255,0.075)',
+  fontFamily = 'Arial, Helvetica, sans-serif',
+  fontWeight = '500',
+} = {}) {
+  const cv = document.createElement('canvas');
+  cv.width = width;
+  cv.height = height;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, width, height);
+
+  ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+  ctx.textBaseline = 'top';
+
+  let x = padding;
+  if (align === 'center') {
+    ctx.textAlign = 'center';
+    x = width / 2;
+  } else if (align === 'right') {
+    ctx.textAlign = 'right';
+    x = width - padding;
+  } else {
+    ctx.textAlign = 'left';
+  }
+
+  const lineH = fontSize * leading;
+  const totalH = lines.length * lineH;
+  const y0 = (height - totalH) / 2;
+
+  ctx.fillStyle = colorLight;
+  lines.forEach((line, i) => ctx.fillText(line, x + 2, y0 + i * lineH + 2));
+
+  ctx.fillStyle = colorDark;
+  lines.forEach((line, i) => ctx.fillText(line, x, y0 + i * lineH));
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+
+  return new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+}
+
+function addLabel(parent, lines, {
+  w,
+  h,
+  x = 0,
+  y = 0,
+  z = 0,
+  rx = 0,
+  ry = 0,
+  rz = 0,
+  ...textOpts
+}) {
+  const mat = makeTextMaterial(lines, textOpts);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  mesh.position.set(x, y, z);
+  mesh.rotation.set(rx, ry, rz);
+  mesh.userData.isLabel = true;
+  mesh.renderOrder = 10;
+  parent.add(mesh);
+  return mesh;
 }
 
 function buildBox() {
@@ -260,8 +345,81 @@ function buildBox() {
   lidMesh.receiveShadow = true;
   lidGroup.add(lidMesh);
 
-  //  Gap C between base top and lid bottom → prevents z-fighting, reads as reveal seam.
+  // Gap C between base top and lid bottom → prevents z-fighting, reads as reveal seam.
   lidGroup.position.y = seamY + C;
+
+  // ── TWYNE copy system — first placement pass ──────────────────────────────
+  const SURFACE_OFFSET = 0.08;
+
+  // TOP — chapter / volume code, near upper-left corner rather than centered
+  addLabel(lidGroup, ['VOLUME I', 'KENOPSIA'], {
+    w: 38,
+    h: 13,
+    x: -22,
+    y: lidBlockH + SURFACE_OFFSET,
+    z: -20,
+    rx: -Math.PI / 2,
+    fontSize: 72,
+    leading: 1.10,
+    align: 'left',
+    padding: 58,
+    fontWeight: '500',
+  });
+
+  // LEFT SIDE — state code
+  addLabel(lidGroup, ['STATE / LIGHT'], {
+    w: 30,
+    h: 6,
+    x: -W / 2 - SURFACE_OFFSET,
+    y: lidBlockH - 15,
+    z: 0,
+    ry: -Math.PI / 2,
+    fontSize: 64,
+    align: 'center',
+    padding: 36,
+    fontWeight: '500',
+  });
+
+  // FRONT — house wordmark placeholder. Replace with exact TWYNE artwork later.
+  addLabel(lidGroup, ['TWYNE'], {
+    w: 42,
+    h: 9,
+    x: 0,
+    y: 18,
+    z: D / 2 + SURFACE_OFFSET,
+    fontSize: 108,
+    align: 'center',
+    padding: 40,
+    fontWeight: '700',
+  });
+
+  // RIGHT SIDE — house descriptor
+  addLabel(lidGroup, ['A HAUS OF VOLUMES'], {
+    w: 34,
+    h: 6,
+    x: W / 2 + SURFACE_OFFSET,
+    y: lidBlockH - 15,
+    z: 0,
+    ry: Math.PI / 2,
+    fontSize: 56,
+    align: 'center',
+    padding: 28,
+    fontWeight: '500',
+  });
+
+  // THIN BASE — technical product information only
+  addLabel(rootGroup, ['PERFUME / PARFUM', '50 ML / 1.7 FL. OZ.'], {
+    w: 34,
+    h: 8,
+    x: 0,
+    y: seamY / 2,
+    z: D / 2 + SURFACE_OFFSET,
+    fontSize: 52,
+    leading: 1.12,
+    align: 'center',
+    padding: 28,
+    fontWeight: '500',
+  });
 
   controls.target.set(0, H / 2, 0);
   applyOpen();
