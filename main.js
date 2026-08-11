@@ -6,29 +6,27 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 const CHAMFER = 0.6;
 
 const params = {
-  width:      90,
-  depth:      90,
-  totalH:     92,
-  lidH:       76,
-  board:       2.5,
-  clearance:   0.8,
-  open:        0,
+  width: 90,
+  depth: 90,
+  totalH: 92,
+  lidH: 76,
+  board: 2.5,
+  clearance: 0.8,
+  open: 0,
 };
 
 // ─── Renderer ────────────────────────────────────────────────────────────────
-
-const canvas   = document.getElementById('canvas');
+const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping         = THREE.ACESFilmicToneMapping;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.88;
-renderer.outputColorSpace    = THREE.SRGBColorSpace;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 // ─── Scene / camera ──────────────────────────────────────────────────────────
-
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0c0c0a);
 
@@ -36,13 +34,12 @@ const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerH
 camera.position.set(175, 110, 220);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping  = true;
-controls.dampingFactor  = 0.06;
-controls.minDistance    = 80;
-controls.maxDistance    = 900;
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 80;
+controls.maxDistance = 900;
 
 // ─── Lighting ────────────────────────────────────────────────────────────────
-
 scene.add(new THREE.AmbientLight(0xf8f8f8, 0.30));
 
 const keyLight = new THREE.DirectionalLight(0xfff0e8, 0.78);
@@ -51,9 +48,9 @@ keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(2048, 2048);
 const ksc = keyLight.shadow.camera;
 ksc.left = ksc.bottom = -300;
-ksc.right = ksc.top   =  300;
-ksc.near  =  10;
-ksc.far   = 900;
+ksc.right = ksc.top = 300;
+ksc.near = 10;
+ksc.far = 900;
 scene.add(keyLight);
 
 const fillLight = new THREE.DirectionalLight(0xe4ecff, 0.28);
@@ -73,7 +70,6 @@ groundMesh.receiveShadow = true;
 scene.add(groundMesh);
 
 // ─── Materials ───────────────────────────────────────────────────────────────
-
 function makeTex(r0, g0, b0, amp, rg, rb) {
   const sz = 1024;
   const cv = document.createElement('canvas');
@@ -82,10 +78,10 @@ function makeTex(r0, g0, b0, amp, rg, rb) {
   ctx.fillStyle = `rgb(${r0},${g0},${b0})`;
   ctx.fillRect(0, 0, sz, sz);
   const img = ctx.getImageData(0, 0, sz, sz);
-  const px  = img.data;
+  const px = img.data;
   for (let i = 0; i < px.length; i += 4) {
     const n = (Math.random() - 0.5) * amp;
-    px[i]     = Math.max(0, Math.min(255, r0 + n));
+    px[i] = Math.max(0, Math.min(255, r0 + n));
     px[i + 1] = Math.max(0, Math.min(255, g0 + n * rg));
     px[i + 2] = Math.max(0, Math.min(255, b0 + n * rb));
     px[i + 3] = 255;
@@ -98,19 +94,20 @@ function makeTex(r0, g0, b0, amp, rg, rb) {
 }
 
 const matWarmAsh = new THREE.MeshStandardMaterial({
-  map:       makeTex(0xCE, 0xC8, 0xBD, 14, 0.96, 0.90),
+  map: makeTex(0xCE, 0xC8, 0xBD, 14, 0.96, 0.90),
   roughness: 0.97,
   metalness: 0.0,
 });
 
 const matSoraDora = new THREE.MeshStandardMaterial({
-  map:       makeTex(0xD2, 0xCE, 0xC8, 10, 0.97, 0.94),
+  map: makeTex(0xD2, 0xCE, 0xC8, 10, 0.97, 0.94),
   roughness: 0.96,
   metalness: 0.0,
 });
 
+// Keep the exact current TWYNE exterior color.
 const matTwyneGrey = new THREE.MeshStandardMaterial({
-  color:     0x454649,
+  color: 0x454649,
   roughness: 0.84,
   metalness: 0.0,
 });
@@ -118,34 +115,42 @@ const matTwyneGrey = new THREE.MeshStandardMaterial({
 let boxMat = matTwyneGrey;
 
 const matGlass = new THREE.MeshPhysicalMaterial({
-  color:        0xf2ede0,
-  roughness:    0.04,
-  metalness:    0.0,
+  color: 0xf2ede0,
+  roughness: 0.04,
+  metalness: 0.0,
   transmission: 0.80,
-  thickness:    1.2,
-  ior:          1.52,
-  transparent:  true,
+  thickness: 1.2,
+  ior: 1.52,
+  transparent: true,
 });
 
 const matCap = new THREE.MeshStandardMaterial({
-  color:     0x151210,
+  color: 0x151210,
   roughness: 0.5,
   metalness: 0.0,
 });
 
 const matRecess = new THREE.MeshStandardMaterial({
-  color:     0x1c1a16,
+  color: 0x1c1a16,
   roughness: 0.97,
   metalness: 0.0,
 });
 
-// Tonal groove: same gunmetal family, only darker enough to read through shadow.
-const matGroove = new THREE.MeshBasicMaterial({
-  color:       0x232426,
+// Tone-on-tone fake relief materials for the recessed border.
+const matFrameShadow = new THREE.MeshBasicMaterial({
+  color: 0x1f2022,
   transparent: true,
-  opacity:     0.52,
-  depthWrite:  false,
-  side:        THREE.DoubleSide,
+  opacity: 0.48,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+});
+
+const matFrameHighlight = new THREE.MeshBasicMaterial({
+  color: 0x77787a,
+  transparent: true,
+  opacity: 0.12,
+  depthWrite: false,
+  side: THREE.DoubleSide,
 });
 
 function applyMaterial(mat) {
@@ -181,20 +186,10 @@ function toggleCheck() {
 }
 
 // ─── Box groups ──────────────────────────────────────────────────────────────
-
 let rootGroup = null;
-let lidGroup  = null;
-
-function slab(group, w, h, d, x, y, z) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), boxMat);
-  mesh.position.set(x, y, z);
-  mesh.castShadow    = true;
-  mesh.receiveShadow = true;
-  group.add(mesh);
-}
+let lidGroup = null;
 
 // ─── Typography / blind-deboss preview ───────────────────────────────────────
-
 function makeTextMaterial(lines, {
   width = 1024,
   height = 256,
@@ -212,7 +207,6 @@ function makeTextMaterial(lines, {
   cv.height = height;
   const ctx = cv.getContext('2d');
   ctx.clearRect(0, 0, width, height);
-
   ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   ctx.textBaseline = 'top';
 
@@ -233,7 +227,6 @@ function makeTextMaterial(lines, {
 
   ctx.fillStyle = colorLight;
   lines.forEach((line, i) => ctx.fillText(line, x + 2, y0 + i * lineH + 2));
-
   ctx.fillStyle = colorDark;
   lines.forEach((line, i) => ctx.fillText(line, x, y0 + i * lineH));
 
@@ -270,56 +263,64 @@ function addLabel(parent, lines, {
   return mesh;
 }
 
-// ─── Incised line system ─────────────────────────────────────────────────────
-// A single very fine top perimeter groove, inset 7 mm, with short returns down
-// the vertical faces. This keeps the current box color and reads as a cut in the
-// surface rather than a printed graphic.
+// ─── CELINE-reference double recessed frame, adapted to TWYNE ───────────────
+// Two quiet tone-on-tone rectangular lines on the FRONT face only.
+// No ribbon, no color contrast, no line wrapping around the box.
+function addReliefStrip(parent, w, h, x, y, z, orientation = 'horizontal') {
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matFrameShadow);
+  shadow.position.set(x, y, z);
+  shadow.userData.isGroove = true;
+  shadow.renderOrder = 8;
+  parent.add(shadow);
 
-function addGrooveStrip(parent, w, h, x, y, z, rx = 0, ry = 0, rz = 0) {
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matGroove);
-  mesh.position.set(x, y, z);
-  mesh.rotation.set(rx, ry, rz);
-  mesh.userData.isGroove = true;
-  mesh.renderOrder = 8;
-  parent.add(mesh);
-  return mesh;
+  const hi = new THREE.Mesh(new THREE.PlaneGeometry(w, h * 0.45), matFrameHighlight);
+  if (orientation === 'vertical') {
+    hi.geometry.dispose();
+    hi.geometry = new THREE.PlaneGeometry(w * 0.45, h);
+    hi.position.set(x + 0.10, y, z + 0.01);
+  } else {
+    hi.position.set(x, y + 0.10, z + 0.01);
+  }
+  hi.userData.isGroove = true;
+  hi.renderOrder = 9;
+  parent.add(hi);
 }
 
-function addIncisedFrame(parent, W, D, lidBlockH) {
-  const inset = 7.0;
-  const lineW = 0.26;
-  const offset = 0.10;
-  const returnDepth = 7.0;
+function addRectFrame(parent, frameW, frameH, centerY, z, lineW) {
+  const leftX = -frameW / 2;
+  const rightX = frameW / 2;
+  const topY = centerY + frameH / 2;
+  const bottomY = centerY - frameH / 2;
 
-  const innerW = W - inset * 2;
-  const innerD = D - inset * 2;
-  const topY = lidBlockH + offset;
+  addReliefStrip(parent, frameW, lineW, 0, topY, z, 'horizontal');
+  addReliefStrip(parent, frameW, lineW, 0, bottomY, z, 'horizontal');
+  addReliefStrip(parent, lineW, frameH, leftX, centerY, z, 'vertical');
+  addReliefStrip(parent, lineW, frameH, rightX, centerY, z, 'vertical');
+}
 
-  // Top face: one quiet rectangular incision.
-  addGrooveStrip(parent, innerW, lineW, 0, topY,  D / 2 - inset, -Math.PI / 2);
-  addGrooveStrip(parent, innerW, lineW, 0, topY, -D / 2 + inset, -Math.PI / 2);
-  addGrooveStrip(parent, lineW, innerD, -W / 2 + inset, topY, 0, -Math.PI / 2);
-  addGrooveStrip(parent, lineW, innerD,  W / 2 - inset, topY, 0, -Math.PI / 2);
+function addFrontDoubleFrame(parent, W, D, lidBlockH) {
+  const z = D / 2 + 0.095;
+  const centerY = lidBlockH / 2;
 
-  // Short returns down front/back so the line feels cut through the object.
-  const returnY = lidBlockH - returnDepth / 2;
-  const frontZ = D / 2 + offset;
-  const backZ  = -D / 2 - offset;
-  const returnH = returnDepth;
+  // Outer frame: broad architectural border.
+  addRectFrame(
+    parent,
+    W - 14,
+    lidBlockH - 14,
+    centerY,
+    z,
+    0.34
+  );
 
-  addGrooveStrip(parent, lineW, returnH, -W / 2 + inset, returnY, frontZ);
-  addGrooveStrip(parent, lineW, returnH,  W / 2 - inset, returnY, frontZ);
-  addGrooveStrip(parent, lineW, returnH, -W / 2 + inset, returnY, backZ, 0, Math.PI, 0);
-  addGrooveStrip(parent, lineW, returnH,  W / 2 - inset, returnY, backZ, 0, Math.PI, 0);
-
-  // Matching returns on left/right faces.
-  const leftX  = -W / 2 - offset;
-  const rightX =  W / 2 + offset;
-
-  addGrooveStrip(parent, lineW, returnH, leftX, returnY, -D / 2 + inset, 0, -Math.PI / 2, 0);
-  addGrooveStrip(parent, lineW, returnH, leftX, returnY,  D / 2 - inset, 0, -Math.PI / 2, 0);
-  addGrooveStrip(parent, lineW, returnH, rightX, returnY, -D / 2 + inset, 0,  Math.PI / 2, 0);
-  addGrooveStrip(parent, lineW, returnH, rightX, returnY,  D / 2 - inset, 0,  Math.PI / 2, 0);
+  // Inner frame: close parallel echo, like the reference, but quieter.
+  addRectFrame(
+    parent,
+    W - 21,
+    lidBlockH - 21,
+    centerY,
+    z + 0.006,
+    0.24
+  );
 }
 
 function buildBox() {
@@ -327,7 +328,6 @@ function buildBox() {
 
   const { width: W, depth: D, totalH: H, lidH: LH, board: T, clearance: C } = params;
   const seamY = H - LH;
-
   const ch = Math.min(CHAMFER, seamY / 2 - 0.01, W / 2 - 0.01, D / 2 - 0.01);
 
   rootGroup = new THREE.Group();
@@ -335,23 +335,22 @@ function buildBox() {
 
   const baseMesh = new THREE.Mesh(new RoundedBoxGeometry(W, seamY, D, 3, ch), boxMat);
   baseMesh.position.set(0, seamY / 2, 0);
-  baseMesh.castShadow    = true;
+  baseMesh.castShadow = true;
   baseMesh.receiveShadow = true;
   rootGroup.add(baseMesh);
 
-  const recessT    = 0.3;
+  const recessT = 0.3;
   const recessMesh = new THREE.Mesh(new THREE.BoxGeometry(50, recessT, 50), matRecess);
   recessMesh.position.set(0, seamY + recessT / 2, 0);
   rootGroup.add(recessMesh);
 
-  const bW      = 49.07;
-  const bD      = 49.60;
-  const bBodyH  = 49.68;
-  const bCapH   = 27.3;
-
+  const bW = 49.07;
+  const bD = 49.60;
+  const bBodyH = 49.68;
+  const bCapH = 27.3;
   const sinkDepth = 7;
-  const bBaseY  = seamY - sinkDepth;
-  const bBodyY  = bBaseY + bBodyH / 2;
+  const bBaseY = seamY - sinkDepth;
+  const bBodyY = bBaseY + bBodyH / 2;
 
   const bodyMesh = new THREE.Mesh(new RoundedBoxGeometry(bW, bBodyH, bD, 3, 1.2), matGlass);
   bodyMesh.position.set(0, bBodyY, 0);
@@ -364,12 +363,12 @@ function buildBox() {
   capMesh.castShadow = true;
   rootGroup.add(capMesh);
 
-  const baseTopY         = seamY;
-  const bottleBottomY    = bBaseY;
-  const bottleTopY       = bBaseY + bBodyH;
-  const capTopY          = bBaseY + bBodyH + bCapH;
+  const baseTopY = seamY;
+  const bottleBottomY = bBaseY;
+  const bottleTopY = bBaseY + bBodyH;
+  const capTopY = bBaseY + bBodyH + bCapH;
   const lidInnerCeilingY = H - T;
-  const lidOuterTopY     = H;
+  const lidOuterTopY = H;
   console.table({ baseTopY, bottleBottomY, bottleTopY, capTopY, lidInnerCeilingY, lidOuterTopY });
   console.assert(capTopY < lidInnerCeilingY, `CAP PROTRUDES: capTop ${capTopY.toFixed(2)} >= lidCeiling ${lidInnerCeilingY}`);
   console.assert(lidInnerCeilingY < lidOuterTopY, 'lidCeiling >= lidTop: board thickness error');
@@ -377,18 +376,18 @@ function buildBox() {
   lidGroup = new THREE.Group();
   rootGroup.add(lidGroup);
 
-  const lidBlockH  = Math.max(LH - C, 1);
+  const lidBlockH = Math.max(LH - C, 1);
   const lidChamfer = Math.min(ch, lidBlockH / 2 - 0.01);
-  const lidMesh    = new THREE.Mesh(new RoundedBoxGeometry(W, lidBlockH, D, 3, lidChamfer), boxMat);
+  const lidMesh = new THREE.Mesh(new RoundedBoxGeometry(W, lidBlockH, D, 3, lidChamfer), boxMat);
   lidMesh.position.set(0, lidBlockH / 2, 0);
-  lidMesh.castShadow    = true;
+  lidMesh.castShadow = true;
   lidMesh.receiveShadow = true;
   lidGroup.add(lidMesh);
 
   lidGroup.position.y = seamY + C;
 
-  // New structural line language.
-  addIncisedFrame(lidGroup, W, D, lidBlockH);
+  // New frame language: double recessed rectangle on front only.
+  addFrontDoubleFrame(lidGroup, W, D, lidBlockH);
 
   // ── TWYNE copy system — centered larger type pass ─────────────────────────
   const SURFACE_OFFSET = 0.08;
@@ -425,7 +424,7 @@ function buildBox() {
     h: 11,
     x: 0,
     y: lidBlockH / 2,
-    z: D / 2 + SURFACE_OFFSET,
+    z: D / 2 + SURFACE_OFFSET + 0.03,
     fontSize: 138,
     align: 'center',
     padding: 28,
@@ -469,11 +468,12 @@ function applyOpen() {
   lidGroup.position.y = (seamY + C) + params.open * (LH + 20);
 }
 
+// ─── Camera presets ──────────────────────────────────────────────────────────
 const CAM_PRESETS = {
-  front: { p: [0,   55, 290], t: [0, 46, 0] },
-  '3q':  { p: [175, 110, 220], t: [0, 46, 0] },
-  side:  { p: [290,  55,   0], t: [0, 46, 0] },
-  top:   { p: [0,  340,  12], t: [0, 46, 0] },
+  front: { p: [0, 55, 290], t: [0, 46, 0] },
+  '3q': { p: [175, 110, 220], t: [0, 46, 0] },
+  side: { p: [290, 55, 0], t: [0, 46, 0] },
+  top: { p: [0, 340, 12], t: [0, 46, 0] },
 };
 
 function goPreset(key) {
@@ -484,22 +484,22 @@ function goPreset(key) {
 }
 
 const dimInputs = {
-  'ctrl-width':  'width',
-  'ctrl-depth':  'depth',
+  'ctrl-width': 'width',
+  'ctrl-depth': 'depth',
   'ctrl-height': 'totalH',
-  'ctrl-lidH':   'lidH',
-  'ctrl-board':  'board',
-  'ctrl-clear':  'clearance',
+  'ctrl-lidH': 'lidH',
+  'ctrl-board': 'board',
+  'ctrl-clear': 'clearance',
 };
 
 for (const [id, key] of Object.entries(dimInputs)) {
-  document.getElementById(id)?.addEventListener('input', (e) => {
+  document.getElementById(id)?.addEventListener('input', e => {
     params[key] = parseFloat(e.target.value) || 0;
     buildBox();
   });
 }
 
-document.getElementById('ctrl-open')?.addEventListener('input', (e) => {
+document.getElementById('ctrl-open')?.addEventListener('input', e => {
   params.open = parseFloat(e.target.value);
   applyOpen();
 });
@@ -514,13 +514,13 @@ const setColor = (mat, active) => {
   active?.classList.add('active');
 };
 
-btnA?.addEventListener('click', () => setColor(matWarmAsh,   btnA));
-btnB?.addEventListener('click', () => setColor(matSoraDora,  btnB));
+btnA?.addEventListener('click', () => setColor(matWarmAsh, btnA));
+btnB?.addEventListener('click', () => setColor(matSoraDora, btnB));
 btnC?.addEventListener('click', () => setColor(matTwyneGrey, btnC));
 
 document.getElementById('btn-matcheck')?.addEventListener('click', toggleCheck);
 
-['front','3q','side','top'].forEach(k =>
+['front', '3q', 'side', 'top'].forEach(k =>
   document.getElementById(`btn-cam-${k}`)?.addEventListener('click', () => goPreset(k))
 );
 
