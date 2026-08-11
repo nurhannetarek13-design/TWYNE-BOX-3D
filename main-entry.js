@@ -72,9 +72,6 @@ function makeMicroWebsiteMaterial(text) {
 }
 
 function addBackWebsite(lidGroup, lidSize) {
-  if (lidGroup.userData.backWebsiteInjected) return;
-  lidGroup.userData.backWebsiteInjected = true;
-
   const material = makeMicroWebsiteMaterial('TWYNEHAUS.COM');
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(29, 4.4), material);
 
@@ -87,14 +84,78 @@ function addBackWebsite(lidGroup, lidSize) {
   lidGroup.add(mesh);
 }
 
-// Detect the deep removable lid and add only the micro website.
-// The previous overlapping 'Third Field' planes were intentionally removed:
-// the top is clean again and the custom TWYNE wordmark remains the hero.
+// TOP — THE BETWEEN LENS.
+// One almond/lens-shaped pressure mark: two curves create one third form.
+// It is deliberately tonal and material-led, not a printed icon.
+function makeBetweenLensMaterial() {
+  const cv = document.createElement('canvas');
+  cv.width = 1024;
+  cv.height = 512;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  const lens = new Path2D();
+  lens.moveTo(78, 256);
+  lens.bezierCurveTo(242, 84, 782, 84, 946, 256);
+  lens.bezierCurveTo(782, 428, 242, 428, 78, 256);
+  lens.closePath();
+
+  function drawLens(dx, dy, fill) {
+    ctx.save();
+    ctx.translate(dx, dy);
+    ctx.fillStyle = fill;
+    ctx.fill(lens);
+    ctx.restore();
+  }
+
+  // Upper-left lip catches light; lower-right wall carries the recess.
+  drawLens(-4.0, -4.0, 'rgba(246,246,239,0.105)');
+  drawLens(5.5, 5.5, 'rgba(0,0,0,0.48)');
+
+  // Compressed same-colour floor: intentionally subtle, never black ink.
+  drawLens(0, 0, 'rgba(5,5,4,0.22)');
+
+  // A second, very fine inner lip keeps it dimensional at close range.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(245,245,238,0.075)';
+  ctx.lineWidth = 3;
+  ctx.stroke(lens);
+  ctx.restore();
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+
+  return new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
+
+function addBetweenLens(lidGroup, lidSize) {
+  const geometry = new THREE.PlaneGeometry(38, 16);
+  // Rotate the silhouette within its own plane before laying it onto the lid.
+  geometry.rotateZ(-0.16);
+
+  const mesh = new THREE.Mesh(geometry, makeBetweenLensMaterial());
+  // Front-right quadrant: far enough from the centered TWYNE wordmark to stay quiet.
+  mesh.position.set(18, lidSize.y + 0.125, 18.5);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.userData.isLabel = true;
+  mesh.userData.isBetweenLens = true;
+  mesh.renderOrder = 18;
+  lidGroup.add(mesh);
+}
+
+// Detect the deep removable lid and add the two quiet house details.
 const originalGroupAdd = THREE.Group.prototype.add;
-let injectingBackWebsite = false;
+let injectingHouseDetails = false;
 THREE.Group.prototype.add = function(...objects) {
   const result = originalGroupAdd.apply(this, objects);
-  if (injectingBackWebsite || this.userData.backWebsiteInjected) return result;
+  if (injectingHouseDetails || this.userData.houseDetailsInjected) return result;
 
   for (const obj of objects) {
     if (!obj?.isMesh || !obj.geometry) continue;
@@ -107,9 +168,11 @@ THREE.Group.prototype.add = function(...objects) {
 
     // Deep removable lid: ~90 × 75 × 90. Excludes the thin base and bottle.
     if (size.x > 84 && size.z > 84 && size.y > 60 && size.y < 100) {
-      injectingBackWebsite = true;
+      this.userData.houseDetailsInjected = true;
+      injectingHouseDetails = true;
+      addBetweenLens(this, size);
       addBackWebsite(this, size);
-      injectingBackWebsite = false;
+      injectingHouseDetails = false;
       break;
     }
   }
