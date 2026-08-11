@@ -13,13 +13,24 @@ if (canvasFontDescriptor?.set && canvasFontDescriptor?.get) {
       return canvasFontDescriptor.get.call(this);
     },
     set(value) {
-      let next = String(value)
+      const next = String(value)
         .replace(/"Bodoni Moda",\s*Didot,\s*"Times New Roman",\s*serif/g, '"Manrope", "Helvetica Neue", Arial, sans-serif')
         .replace(/^500\s+/, '600 ');
       canvasFontDescriptor.set.call(this, next);
     },
   });
 }
+
+// Right-side inscription: show only the active state on the EDP box.
+// This keeps the face as a luxury product code instead of a comparison/menu.
+const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
+  const replacements = {
+    'TWO STATES': 'STATE I',
+    'ABSOLU': '01 — 02',
+  };
+  return originalFillText.call(this, replacements[text] ?? text, ...args);
+};
 
 await document.fonts?.load?.('600 90px "Manrope"');
 await document.fonts?.ready;
