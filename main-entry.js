@@ -90,6 +90,57 @@ function addFieldPlane(parent, {
   return mesh;
 }
 
+// Micro maker's mark for the back panel. Still tonal/blind-deboss, never white ink.
+function makeMicroWebsiteMaterial(text) {
+  const cv = document.createElement('canvas');
+  cv.width = 1200;
+  cv.height = 220;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.font = '600 64px "Manrope", "Helvetica Neue", Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fontKerning = 'normal';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '9px';
+
+  const x = cv.width / 2;
+  const y = cv.height / 2;
+  const edge = 2.4;
+
+  // Same-substrate deboss illusion: a fine light lip, dark inner wall, compressed floor.
+  ctx.fillStyle = 'rgba(246,246,239,0.12)';
+  ctx.fillText(text, x - edge, y - edge);
+  ctx.fillStyle = 'rgba(0,0,0,0.48)';
+  ctx.fillText(text, x + edge, y + edge);
+  ctx.fillStyle = 'rgba(5,5,4,0.38)';
+  ctx.fillText(text, x, y);
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+
+  return new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
+
+function addBackWebsite(lidGroup, lidSize) {
+  const material = makeMicroWebsiteMaterial('TWYNEHAUS.COM');
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(31, 4.8), material);
+
+  // Low on the back: enough breathing room from the seam, but clearly not centered copy.
+  mesh.position.set(0, 8.5, -lidSize.z / 2 - 0.112);
+  mesh.rotation.y = Math.PI;
+  mesh.userData.isLabel = true;
+  mesh.userData.isBackWebsite = true;
+  mesh.renderOrder = 32;
+  lidGroup.add(mesh);
+}
+
 function injectThirdField(lidGroup, lidSize) {
   if (lidGroup.userData.thirdFieldInjected) return;
   lidGroup.userData.thirdFieldInjected = true;
@@ -143,6 +194,9 @@ function injectThirdField(lidGroup, lidSize) {
     material: fieldMatB,
     order: 12,
   });
+
+  // BACK — 95% silence, with one micro house address at the bottom.
+  addBackWebsite(lidGroup, lidSize);
 }
 
 // main-v2 keeps the scene private, so hook the moment its deep lid mesh is
@@ -174,7 +228,7 @@ THREE.Group.prototype.add = function(...objects) {
   return result;
 };
 
-await document.fonts?.load?.('600 90px \"Manrope\"');
+await document.fonts?.load?.('600 90px "Manrope"');
 await document.fonts?.ready;
 
 await import('./main-v2.js');
