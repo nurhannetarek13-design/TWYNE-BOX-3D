@@ -74,7 +74,7 @@ function makeMicroTextMaterial(lines) {
 function addFilmFrame(lidGroup, lidSize) {
   const loader = new THREE.TextureLoader();
   const texture = loader.load(
-    './assets/kenopsia-film-frame-v2.jpg?v=2',
+    './assets/kenopsia-film-frame-v2.jpg?v=3',
     () => {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
@@ -87,6 +87,7 @@ function addFilmFrame(lidGroup, lidSize) {
 
   const imageMat = new THREE.MeshBasicMaterial({
     map: texture,
+    color: new THREE.Color(0xb8b8b8),
     toneMapped: false,
     side: THREE.DoubleSide,
   });
