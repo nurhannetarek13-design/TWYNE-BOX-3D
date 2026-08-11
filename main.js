@@ -79,6 +79,7 @@ function makeTex(r0, g0, b0, amp, rg, rb) {
   ctx.fillRect(0, 0, sz, sz);
   const img = ctx.getImageData(0, 0, sz, sz);
   const px = img.data;
+
   for (let i = 0; i < px.length; i += 4) {
     const n = (Math.random() - 0.5) * amp;
     px[i] = Math.max(0, Math.min(255, r0 + n));
@@ -86,6 +87,7 @@ function makeTex(r0, g0, b0, amp, rg, rb) {
     px[i + 2] = Math.max(0, Math.min(255, b0 + n * rb));
     px[i + 3] = 255;
   }
+
   ctx.putImageData(img, 0, 0);
   const tex = new THREE.CanvasTexture(cv);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -105,7 +107,7 @@ const matSoraDora = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 });
 
-// Keep the exact current TWYNE exterior color.
+// Current TWYNE exterior color — unchanged.
 const matTwyneGrey = new THREE.MeshStandardMaterial({
   color: 0x454649,
   roughness: 0.84,
@@ -136,26 +138,53 @@ const matRecess = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 });
 
-// Tone-on-tone fake relief materials for the recessed border.
+// Recessed line treatment — tonal, never printed-looking.
 const matFrameShadow = new THREE.MeshBasicMaterial({
   color: 0x1f2022,
   transparent: true,
-  opacity: 0.48,
+  opacity: 0.44,
   depthWrite: false,
   side: THREE.DoubleSide,
 });
 
 const matFrameHighlight = new THREE.MeshBasicMaterial({
-  color: 0x77787a,
+  color: 0x858689,
   transparent: true,
-  opacity: 0.12,
+  opacity: 0.11,
   depthWrite: false,
   side: THREE.DoubleSide,
 });
 
+// Exact custom TWYNE artwork traced from the supplied wordmark.
+const wordmarkTexture = new THREE.TextureLoader().load('./assets/twyne-wordmark.svg');
+wordmarkTexture.colorSpace = THREE.SRGBColorSpace;
+
+const matWordmarkShadow = new THREE.MeshBasicMaterial({
+  map: wordmarkTexture,
+  color: 0x151618,
+  transparent: true,
+  opacity: 0.72,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+});
+
+const matWordmarkHighlight = new THREE.MeshBasicMaterial({
+  map: wordmarkTexture,
+  color: 0xa1a2a4,
+  transparent: true,
+  opacity: 0.13,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+});
+
+// ─── Box groups ──────────────────────────────────────────────────────────────
+let rootGroup = null;
+let lidGroup = null;
+
 function applyMaterial(mat) {
   boxMat = mat;
   if (!rootGroup) return;
+
   rootGroup.traverse(obj => {
     if (
       obj.isMesh &&
@@ -178,16 +207,13 @@ function toggleCheck() {
   const btn = document.getElementById('btn-matcheck');
   btn.textContent = checkActive ? 'Check: ON – lighting OFF' : 'Material Check';
   btn.classList.toggle('active', checkActive);
+
   const skip = new Set([matGlass, matCap, matRecess]);
   if (rootGroup) rootGroup.traverse(obj => {
     if (!obj.isMesh || obj.userData.isLabel || obj.userData.isGroove || skip.has(obj.material)) return;
     obj.material = checkActive ? matBasicCheck : boxMat;
   });
 }
-
-// ─── Box groups ──────────────────────────────────────────────────────────────
-let rootGroup = null;
-let lidGroup = null;
 
 // ─── Typography / blind-deboss preview ───────────────────────────────────────
 function makeTextMaterial(lines, {
@@ -227,6 +253,7 @@ function makeTextMaterial(lines, {
 
   ctx.fillStyle = colorLight;
   lines.forEach((line, i) => ctx.fillText(line, x + 2, y0 + i * lineH + 2));
+
   ctx.fillStyle = colorDark;
   lines.forEach((line, i) => ctx.fillText(line, x, y0 + i * lineH));
 
@@ -258,92 +285,181 @@ function addLabel(parent, lines, {
   mesh.position.set(x, y, z);
   mesh.rotation.set(rx, ry, rz);
   mesh.userData.isLabel = true;
-  mesh.renderOrder = 10;
+  mesh.renderOrder = 20;
   parent.add(mesh);
   return mesh;
 }
 
-// ─── CELINE-reference double recessed frame, adapted to TWYNE ───────────────
-// Two quiet tone-on-tone rectangular lines on the FRONT face only.
-// No ribbon, no color contrast, no line wrapping around the box.
-function addReliefStrip(parent, w, h, x, y, z, orientation = 'horizontal') {
+function addWordmark(parent, {
+  w,
+  h,
+  x = 0,
+  y = 0,
+  z = 0,
+  rx = 0,
+  ry = 0,
+  rz = 0,
+}) {
+  const geo = new THREE.PlaneGeometry(w, h);
+
+  // Highlight lip first, then the darker recessed core.
+  const hi = new THREE.Mesh(geo, matWordmarkHighlight);
+  hi.position.set(x - 0.08, y + 0.08, z);
+  hi.rotation.set(rx, ry, rz);
+  hi.userData.isLabel = true;
+  hi.renderOrder = 18;
+  parent.add(hi);
+
+  const shadow = new THREE.Mesh(geo.clone(), matWordmarkShadow);
+  shadow.position.set(x + 0.06, y - 0.06, z + 0.008);
+  shadow.rotation.set(rx, ry, rz);
+  shadow.userData.isLabel = true;
+  shadow.renderOrder = 19;
+  parent.add(shadow);
+}
+
+// ─── Double recessed panel system ────────────────────────────────────────────
+// The CELINE-like double rule now belongs to the whole LID object:
+// front, back, both sides and top. The thin base intentionally stays clean.
+function addReliefStrip(parent, w, h, x, y, orientation = 'horizontal') {
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matFrameShadow);
-  shadow.position.set(x, y, z);
+  shadow.position.set(x, y, 0);
   shadow.userData.isGroove = true;
   shadow.renderOrder = 8;
   parent.add(shadow);
 
-  const hi = new THREE.Mesh(new THREE.PlaneGeometry(w, h * 0.45), matFrameHighlight);
+  const hiGeo = orientation === 'vertical'
+    ? new THREE.PlaneGeometry(w * 0.42, h)
+    : new THREE.PlaneGeometry(w, h * 0.42);
+
+  const hi = new THREE.Mesh(hiGeo, matFrameHighlight);
   if (orientation === 'vertical') {
-    hi.geometry.dispose();
-    hi.geometry = new THREE.PlaneGeometry(w * 0.45, h);
-    hi.position.set(x + 0.10, y, z + 0.01);
+    hi.position.set(x + 0.10, y, 0.007);
   } else {
-    hi.position.set(x, y + 0.10, z + 0.01);
+    hi.position.set(x, y + 0.10, 0.007);
   }
   hi.userData.isGroove = true;
   hi.renderOrder = 9;
   parent.add(hi);
 }
 
-function addRectFrame(parent, frameW, frameH, centerY, z, lineW) {
+function addRectFrame2D(parent, frameW, frameH, lineW) {
   const leftX = -frameW / 2;
   const rightX = frameW / 2;
-  const topY = centerY + frameH / 2;
-  const bottomY = centerY - frameH / 2;
+  const topY = frameH / 2;
+  const bottomY = -frameH / 2;
 
-  addReliefStrip(parent, frameW, lineW, 0, topY, z, 'horizontal');
-  addReliefStrip(parent, frameW, lineW, 0, bottomY, z, 'horizontal');
-  addReliefStrip(parent, lineW, frameH, leftX, centerY, z, 'vertical');
-  addReliefStrip(parent, lineW, frameH, rightX, centerY, z, 'vertical');
+  addReliefStrip(parent, frameW, lineW, 0, topY, 'horizontal');
+  addReliefStrip(parent, frameW, lineW, 0, bottomY, 'horizontal');
+  addReliefStrip(parent, lineW, frameH, leftX, 0, 'vertical');
+  addReliefStrip(parent, lineW, frameH, rightX, 0, 'vertical');
 }
 
-function addFrontDoubleFrame(parent, W, D, lidBlockH) {
-  const z = D / 2 + 0.095;
-  const centerY = lidBlockH / 2;
+function addDoubleFrameFace(parent, {
+  faceW,
+  faceH,
+  x = 0,
+  y = 0,
+  z = 0,
+  rx = 0,
+  ry = 0,
+  rz = 0,
+}) {
+  const face = new THREE.Group();
+  face.position.set(x, y, z);
+  face.rotation.set(rx, ry, rz);
+  parent.add(face);
 
-  // Outer frame: broad architectural border.
-  addRectFrame(
-    parent,
-    W - 14,
-    lidBlockH - 14,
-    centerY,
-    z,
-    0.34
-  );
+  const outerW = Math.max(faceW - 14, 2);
+  const outerH = Math.max(faceH - 14, 2);
+  const innerW = Math.max(faceW - 21, 2);
+  const innerH = Math.max(faceH - 21, 2);
 
-  // Inner frame: close parallel echo, like the reference, but quieter.
-  addRectFrame(
-    parent,
-    W - 21,
-    lidBlockH - 21,
-    centerY,
-    z + 0.006,
-    0.24
-  );
+  addRectFrame2D(face, outerW, outerH, 0.34);
+  addRectFrame2D(face, innerW, innerH, 0.24);
 }
 
+function addAllLidFrames(parent, W, D, lidBlockH) {
+  const o = 0.105;
+  const cy = lidBlockH / 2;
+
+  // FRONT
+  addDoubleFrameFace(parent, {
+    faceW: W,
+    faceH: lidBlockH,
+    y: cy,
+    z: D / 2 + o,
+  });
+
+  // BACK
+  addDoubleFrameFace(parent, {
+    faceW: W,
+    faceH: lidBlockH,
+    y: cy,
+    z: -D / 2 - o,
+    ry: Math.PI,
+  });
+
+  // LEFT
+  addDoubleFrameFace(parent, {
+    faceW: D,
+    faceH: lidBlockH,
+    x: -W / 2 - o,
+    y: cy,
+    ry: -Math.PI / 2,
+  });
+
+  // RIGHT
+  addDoubleFrameFace(parent, {
+    faceW: D,
+    faceH: lidBlockH,
+    x: W / 2 + o,
+    y: cy,
+    ry: Math.PI / 2,
+  });
+
+  // TOP
+  addDoubleFrameFace(parent, {
+    faceW: W,
+    faceH: D,
+    y: lidBlockH + o,
+    rx: -Math.PI / 2,
+  });
+}
+
+// ─── Build box ───────────────────────────────────────────────────────────────
 function buildBox() {
   if (rootGroup) scene.remove(rootGroup);
 
-  const { width: W, depth: D, totalH: H, lidH: LH, board: T, clearance: C } = params;
+  const {
+    width: W,
+    depth: D,
+    totalH: H,
+    lidH: LH,
+    board: T,
+    clearance: C,
+  } = params;
+
   const seamY = H - LH;
   const ch = Math.min(CHAMFER, seamY / 2 - 0.01, W / 2 - 0.01, D / 2 - 0.01);
 
   rootGroup = new THREE.Group();
   scene.add(rootGroup);
 
+  // Thin base.
   const baseMesh = new THREE.Mesh(new RoundedBoxGeometry(W, seamY, D, 3, ch), boxMat);
   baseMesh.position.set(0, seamY / 2, 0);
   baseMesh.castShadow = true;
   baseMesh.receiveShadow = true;
   rootGroup.add(baseMesh);
 
+  // Recess mark under bottle.
   const recessT = 0.3;
   const recessMesh = new THREE.Mesh(new THREE.BoxGeometry(50, recessT, 50), matRecess);
   recessMesh.position.set(0, seamY + recessT / 2, 0);
   rootGroup.add(recessMesh);
 
+  // Bottle placeholder — current locked proportions.
   const bW = 49.07;
   const bD = 49.60;
   const bBodyH = 49.68;
@@ -352,13 +468,19 @@ function buildBox() {
   const bBaseY = seamY - sinkDepth;
   const bBodyY = bBaseY + bBodyH / 2;
 
-  const bodyMesh = new THREE.Mesh(new RoundedBoxGeometry(bW, bBodyH, bD, 3, 1.2), matGlass);
+  const bodyMesh = new THREE.Mesh(
+    new RoundedBoxGeometry(bW, bBodyH, bD, 3, 1.2),
+    matGlass
+  );
   bodyMesh.position.set(0, bBodyY, 0);
   bodyMesh.castShadow = true;
   rootGroup.add(bodyMesh);
 
   const bCapY = bBaseY + bBodyH + bCapH / 2;
-  const capMesh = new THREE.Mesh(new RoundedBoxGeometry(bW - 4, bCapH, bD - 4, 3, 0.8), matCap);
+  const capMesh = new THREE.Mesh(
+    new RoundedBoxGeometry(bW - 4, bCapH, bD - 4, 3, 0.8),
+    matCap
+  );
   capMesh.position.set(0, bCapY, 0);
   capMesh.castShadow = true;
   rootGroup.add(capMesh);
@@ -369,16 +491,31 @@ function buildBox() {
   const capTopY = bBaseY + bBodyH + bCapH;
   const lidInnerCeilingY = H - T;
   const lidOuterTopY = H;
-  console.table({ baseTopY, bottleBottomY, bottleTopY, capTopY, lidInnerCeilingY, lidOuterTopY });
-  console.assert(capTopY < lidInnerCeilingY, `CAP PROTRUDES: capTop ${capTopY.toFixed(2)} >= lidCeiling ${lidInnerCeilingY}`);
-  console.assert(lidInnerCeilingY < lidOuterTopY, 'lidCeiling >= lidTop: board thickness error');
 
+  console.table({
+    baseTopY,
+    bottleBottomY,
+    bottleTopY,
+    capTopY,
+    lidInnerCeilingY,
+    lidOuterTopY,
+  });
+
+  console.assert(
+    capTopY < lidInnerCeilingY,
+    `CAP PROTRUDES: capTop ${capTopY.toFixed(2)} >= lidCeiling ${lidInnerCeilingY}`
+  );
+
+  // Deep lid.
   lidGroup = new THREE.Group();
   rootGroup.add(lidGroup);
 
   const lidBlockH = Math.max(LH - C, 1);
   const lidChamfer = Math.min(ch, lidBlockH / 2 - 0.01);
-  const lidMesh = new THREE.Mesh(new RoundedBoxGeometry(W, lidBlockH, D, 3, lidChamfer), boxMat);
+  const lidMesh = new THREE.Mesh(
+    new RoundedBoxGeometry(W, lidBlockH, D, 3, lidChamfer),
+    boxMat
+  );
   lidMesh.position.set(0, lidBlockH / 2, 0);
   lidMesh.castShadow = true;
   lidMesh.receiveShadow = true;
@@ -386,74 +523,74 @@ function buildBox() {
 
   lidGroup.position.y = seamY + C;
 
-  // New frame language: double recessed rectangle on front only.
-  addFrontDoubleFrame(lidGroup, W, D, lidBlockH);
+  // Double recessed panel language on every lid face + top.
+  addAllLidFrames(lidGroup, W, D, lidBlockH);
 
-  // ── TWYNE copy system — centered larger type pass ─────────────────────────
-  const SURFACE_OFFSET = 0.08;
+  const SURFACE_OFFSET = 0.135;
 
+  // TOP — centered and larger.
   addLabel(lidGroup, ['VOLUME I', 'KENOPSIA'], {
-    w: 44,
-    h: 16,
+    w: 50,
+    h: 17,
     x: 0,
     y: lidBlockH + SURFACE_OFFSET,
     z: 0,
     rx: -Math.PI / 2,
-    fontSize: 96,
-    leading: 1.14,
+    fontSize: 110,
+    leading: 1.12,
     align: 'center',
-    padding: 36,
+    padding: 28,
     fontWeight: '600',
   });
 
+  // LEFT — centered and larger.
   addLabel(lidGroup, ['STATE / LIGHT'], {
-    w: 36,
-    h: 8,
+    w: 42,
+    h: 9,
     x: -W / 2 - SURFACE_OFFSET,
     y: lidBlockH / 2,
     z: 0,
     ry: -Math.PI / 2,
-    fontSize: 84,
+    fontSize: 100,
     align: 'center',
-    padding: 24,
+    padding: 18,
     fontWeight: '600',
   });
 
-  addLabel(lidGroup, ['TWYNE'], {
-    w: 50,
-    h: 11,
+  // FRONT — exact TWYNE wordmark, much larger, centered inside the inner frame.
+  addWordmark(lidGroup, {
+    w: 66,
+    h: 6.46,
     x: 0,
     y: lidBlockH / 2,
-    z: D / 2 + SURFACE_OFFSET + 0.03,
-    fontSize: 138,
-    align: 'center',
-    padding: 28,
-    fontWeight: '700',
+    z: D / 2 + SURFACE_OFFSET + 0.02,
   });
 
+  // RIGHT — centered and larger.
   addLabel(lidGroup, ['A HAUS OF VOLUMES'], {
-    w: 40,
-    h: 8,
+    w: 50,
+    h: 9,
     x: W / 2 + SURFACE_OFFSET,
     y: lidBlockH / 2,
     z: 0,
     ry: Math.PI / 2,
-    fontSize: 70,
+    fontSize: 84,
     align: 'center',
-    padding: 20,
+    padding: 16,
     fontWeight: '600',
   });
 
+  // THIN BASE — centered technical information, slightly larger.
   addLabel(rootGroup, ['PERFUME / PARFUM', '50 ML / 1.7 FL. OZ.'], {
-    w: 40,
-    h: 10,
+    w: 46,
+    h: 11,
     x: 0,
     y: seamY / 2,
     z: D / 2 + SURFACE_OFFSET,
-    fontSize: 62,
-    leading: 1.16,
+    fontSize: 70,
+    leading: 1.14,
     align: 'center',
-    padding: 20,
+    padding: 16,
     fontWeight: '600',
   });
 
@@ -483,6 +620,7 @@ function goPreset(key) {
   controls.update();
 }
 
+// ─── Controls ────────────────────────────────────────────────────────────────
 const dimInputs = {
   'ctrl-width': 'width',
   'ctrl-depth': 'depth',
@@ -508,6 +646,7 @@ const btnA = document.getElementById('btn-a');
 const btnB = document.getElementById('btn-b');
 const btnC = document.getElementById('btn-c');
 const colorBtns = [btnA, btnB, btnC];
+
 const setColor = (mat, active) => {
   applyMaterial(mat);
   colorBtns.forEach(b => b?.classList.remove('active'));
@@ -524,6 +663,7 @@ document.getElementById('btn-matcheck')?.addEventListener('click', toggleCheck);
   document.getElementById(`btn-cam-${k}`)?.addEventListener('click', () => goPreset(k))
 );
 
+// ─── Resize / render ─────────────────────────────────────────────────────────
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
