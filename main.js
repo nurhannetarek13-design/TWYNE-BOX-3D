@@ -119,13 +119,12 @@ const matSoraDora = new THREE.MeshStandardMaterial({
 // C — Deep Gunmetal  #454649  dense, architectural, satin-matte
 const matTwyneGrey = new THREE.MeshStandardMaterial({
   color:     0x454649,
-  roughness: 0.84,   // satin-matte: slight controlled sheen without metallic read
+  roughness: 0.84,
   metalness: 0.0,
 });
 
 let boxMat = matTwyneGrey;
 
-// Glass body and dark cap for the bottle placeholder
 const matGlass = new THREE.MeshPhysicalMaterial({
   color:        0xf2ede0,
   roughness:    0.04,
@@ -142,7 +141,6 @@ const matCap = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 });
 
-// Dark socket mark on base top surface
 const matRecess = new THREE.MeshStandardMaterial({
   color:     0x1c1a16,
   roughness: 0.97,
@@ -165,7 +163,6 @@ function applyMaterial(mat) {
   });
 }
 
-// Flat MeshBasicMaterial (unlit) — all faces must show identical grey if material is correct
 const matBasicCheck = new THREE.MeshBasicMaterial({ color: 0x858582 });
 let checkActive = false;
 
@@ -174,7 +171,6 @@ function toggleCheck() {
   const btn = document.getElementById('btn-matcheck');
   btn.textContent = checkActive ? 'Check: ON – lighting OFF' : 'Material Check';
   btn.classList.toggle('active', checkActive);
-  // swap every exterior mesh; non-exterior mats and typography are unchanged
   const skip = new Set([matGlass, matCap, matRecess]);
   if (rootGroup) rootGroup.traverse(obj => {
     if (!obj.isMesh || obj.userData.isLabel || skip.has(obj.material)) return;
@@ -196,8 +192,6 @@ function slab(group, w, h, d, x, y, z) {
 }
 
 // ─── Typography / blind-deboss preview ───────────────────────────────────────
-// This is a placement study, not the final physical deboss geometry.
-// It uses a tiny dark shadow + pale edge to mimic a blind impression under light.
 function makeTextMaterial(lines, {
   width = 1024,
   height = 256,
@@ -277,51 +271,44 @@ function buildBox() {
   if (rootGroup) scene.remove(rootGroup);
 
   const { width: W, depth: D, totalH: H, lidH: LH, board: T, clearance: C } = params;
-
   const seamY = H - LH;
 
-  // Safe chamfer: must not exceed half of the smallest dimension
   const ch = Math.min(CHAMFER, seamY / 2 - 0.01, W / 2 - 0.01, D / 2 - 0.01);
 
   rootGroup = new THREE.Group();
   scene.add(rootGroup);
 
-  // ── Outer base (thin ring, solid chamfered block) ─────────────────────
   const baseMesh = new THREE.Mesh(new RoundedBoxGeometry(W, seamY, D, 3, ch), boxMat);
   baseMesh.position.set(0, seamY / 2, 0);
   baseMesh.castShadow    = true;
   baseMesh.receiveShadow = true;
   rootGroup.add(baseMesh);
 
-  // ── Bottle recess — 0.3 mm dark mark on base top, hidden by bottle ──────
   const recessT    = 0.3;
   const recessMesh = new THREE.Mesh(new THREE.BoxGeometry(50, recessT, 50), matRecess);
   recessMesh.position.set(0, seamY + recessT / 2, 0);
   rootGroup.add(recessMesh);
 
-  // ── Bottle — exact TWYNE dimensions ───────────────────────────────────────
   const bW      = 49.07;
   const bD      = 49.60;
   const bBodyH  = 49.68;
-  const bCapH   = 27.3;              // fixed — 55% of glass body, neck hidden inside cap
+  const bCapH   = 27.3;
 
   const sinkDepth = 7;
-  const bBaseY  = seamY - sinkDepth; // bottle bottom 7 mm inside solid base
+  const bBaseY  = seamY - sinkDepth;
   const bBodyY  = bBaseY + bBodyH / 2;
 
-  // Glass body
   const bodyMesh = new THREE.Mesh(new RoundedBoxGeometry(bW, bBodyH, bD, 3, 1.2), matGlass);
   bodyMesh.position.set(0, bBodyY, 0);
   bodyMesh.castShadow = true;
   rootGroup.add(bodyMesh);
 
-  const bCapY      = bBaseY + bBodyH + bCapH / 2;   // cap flush on glass body
+  const bCapY = bBaseY + bBodyH + bCapH / 2;
   const capMesh = new THREE.Mesh(new RoundedBoxGeometry(bW - 4, bCapH, bD - 4, 3, 0.8), matCap);
   capMesh.position.set(0, bCapY, 0);
   capMesh.castShadow = true;
   rootGroup.add(capMesh);
 
-  // Y-stack debug — verify capTopY < lidInnerCeilingY < lidOuterTopY
   const baseTopY         = seamY;
   const bottleBottomY    = bBaseY;
   const bottleTopY       = bBaseY + bBodyH;
@@ -332,93 +319,85 @@ function buildBox() {
   console.assert(capTopY < lidInnerCeilingY, `CAP PROTRUDES: capTop ${capTopY.toFixed(2)} >= lidCeiling ${lidInnerCeilingY}`);
   console.assert(lidInnerCeilingY < lidOuterTopY, 'lidCeiling >= lidTop: board thickness error');
 
-  // ── Lid (single solid block, chamfered all edges) ──────────────────
-  //  Height is reduced by C so that base + gap + lid = totalH exactly.
   lidGroup = new THREE.Group();
   rootGroup.add(lidGroup);
 
   const lidBlockH  = Math.max(LH - C, 1);
   const lidChamfer = Math.min(ch, lidBlockH / 2 - 0.01);
   const lidMesh    = new THREE.Mesh(new RoundedBoxGeometry(W, lidBlockH, D, 3, lidChamfer), boxMat);
-  lidMesh.position.set(0, lidBlockH / 2, 0);  // local origin at lid bottom face
+  lidMesh.position.set(0, lidBlockH / 2, 0);
   lidMesh.castShadow    = true;
   lidMesh.receiveShadow = true;
   lidGroup.add(lidMesh);
 
-  // Gap C between base top and lid bottom → prevents z-fighting, reads as reveal seam.
   lidGroup.position.y = seamY + C;
 
-  // ── TWYNE copy system — first placement pass ──────────────────────────────
+  // ── TWYNE copy system — centered larger type pass ─────────────────────────
   const SURFACE_OFFSET = 0.08;
 
-  // TOP — chapter / volume code, near upper-left corner rather than centered
   addLabel(lidGroup, ['VOLUME I', 'KENOPSIA'], {
-    w: 38,
-    h: 13,
-    x: -22,
+    w: 44,
+    h: 16,
+    x: 0,
     y: lidBlockH + SURFACE_OFFSET,
-    z: -20,
-    rx: -Math.PI / 2,
-    fontSize: 72,
-    leading: 1.10,
-    align: 'left',
-    padding: 58,
-    fontWeight: '500',
-  });
-
-  // LEFT SIDE — state code
-  addLabel(lidGroup, ['STATE / LIGHT'], {
-    w: 30,
-    h: 6,
-    x: -W / 2 - SURFACE_OFFSET,
-    y: lidBlockH - 15,
     z: 0,
-    ry: -Math.PI / 2,
-    fontSize: 64,
+    rx: -Math.PI / 2,
+    fontSize: 96,
+    leading: 1.14,
     align: 'center',
     padding: 36,
-    fontWeight: '500',
+    fontWeight: '600',
   });
 
-  // FRONT — house wordmark placeholder. Replace with exact TWYNE artwork later.
-  addLabel(lidGroup, ['TWYNE'], {
-    w: 42,
-    h: 9,
-    x: 0,
-    y: 18,
-    z: D / 2 + SURFACE_OFFSET,
-    fontSize: 108,
+  addLabel(lidGroup, ['STATE / LIGHT'], {
+    w: 36,
+    h: 8,
+    x: -W / 2 - SURFACE_OFFSET,
+    y: lidBlockH / 2,
+    z: 0,
+    ry: -Math.PI / 2,
+    fontSize: 84,
     align: 'center',
-    padding: 40,
+    padding: 24,
+    fontWeight: '600',
+  });
+
+  addLabel(lidGroup, ['TWYNE'], {
+    w: 50,
+    h: 11,
+    x: 0,
+    y: lidBlockH / 2,
+    z: D / 2 + SURFACE_OFFSET,
+    fontSize: 138,
+    align: 'center',
+    padding: 28,
     fontWeight: '700',
   });
 
-  // RIGHT SIDE — house descriptor
   addLabel(lidGroup, ['A HAUS OF VOLUMES'], {
-    w: 34,
-    h: 6,
+    w: 40,
+    h: 8,
     x: W / 2 + SURFACE_OFFSET,
-    y: lidBlockH - 15,
+    y: lidBlockH / 2,
     z: 0,
     ry: Math.PI / 2,
-    fontSize: 56,
+    fontSize: 70,
     align: 'center',
-    padding: 28,
-    fontWeight: '500',
+    padding: 20,
+    fontWeight: '600',
   });
 
-  // THIN BASE — technical product information only
   addLabel(rootGroup, ['PERFUME / PARFUM', '50 ML / 1.7 FL. OZ.'], {
-    w: 34,
-    h: 8,
+    w: 40,
+    h: 10,
     x: 0,
     y: seamY / 2,
     z: D / 2 + SURFACE_OFFSET,
-    fontSize: 52,
-    leading: 1.12,
+    fontSize: 62,
+    leading: 1.16,
     align: 'center',
-    padding: 28,
-    fontWeight: '500',
+    padding: 20,
+    fontWeight: '600',
   });
 
   controls.target.set(0, H / 2, 0);
@@ -432,13 +411,13 @@ function applyOpen() {
   lidGroup.position.y = (seamY + C) + params.open * (LH + 20);
 }
 
-// Camera presets — snap to position then let OrbitControls take over
 const CAM_PRESETS = {
   front: { p: [0,   55, 290], t: [0, 46, 0] },
   '3q':  { p: [175, 110, 220], t: [0, 46, 0] },
   side:  { p: [290,  55,   0], t: [0, 46, 0] },
   top:   { p: [0,  340,  12], t: [0, 46, 0] },
 };
+
 function goPreset(key) {
   const { p, t } = CAM_PRESETS[key];
   camera.position.set(...p);
@@ -471,7 +450,12 @@ const btnA = document.getElementById('btn-a');
 const btnB = document.getElementById('btn-b');
 const btnC = document.getElementById('btn-c');
 const colorBtns = [btnA, btnB, btnC];
-const setColor = (mat, active) => { applyMaterial(mat); colorBtns.forEach(b => b?.classList.remove('active')); active?.classList.add('active'); };
+const setColor = (mat, active) => {
+  applyMaterial(mat);
+  colorBtns.forEach(b => b?.classList.remove('active'));
+  active?.classList.add('active');
+};
+
 btnA?.addEventListener('click', () => setColor(matWarmAsh,   btnA));
 btnB?.addEventListener('click', () => setColor(matSoraDora,  btnB));
 btnC?.addEventListener('click', () => setColor(matTwyneGrey, btnC));
@@ -482,15 +466,11 @@ document.getElementById('btn-matcheck')?.addEventListener('click', toggleCheck);
   document.getElementById(`btn-cam-${k}`)?.addEventListener('click', () => goPreset(k))
 );
 
-// ─── Resize ──────────────────────────────────────────────────────────────────
-
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-// ─── Render loop ─────────────────────────────────────────────────────────────
 
 (function animate() {
   requestAnimationFrame(animate);
@@ -498,7 +478,4 @@ window.addEventListener('resize', () => {
   renderer.render(scene, camera);
 })();
 
-// ─── Init ────────────────────────────────────────────────────────────────────
-
 buildBox();
-buildDisplayBottle();
