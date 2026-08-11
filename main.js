@@ -3,18 +3,16 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // 1 Three.js unit = 1 mm
-
-// Micro-bevel radius: imperceptible in shape, catches light cleanly on every edge
 const CHAMFER = 0.6;
 
 const params = {
-  width:      90,    // lid outer width
-  depth:      90,    // lid outer depth
-  totalH:     92,    // total closed-box height
-  lidH:       76,    // lid piece height (top panel + deep skirt)
-  board:       2.5,  // wall / panel thickness
-  clearance:   0.8,  // gap per side — controls both interior sliding gap and visible seam height
-  open:        0,    // 0 = closed, 1 = fully open
+  width:      90,
+  depth:      90,
+  totalH:     92,
+  lidH:       76,
+  board:       2.5,
+  clearance:   0.8,
+  open:        0,
 };
 
 // ─── Renderer ────────────────────────────────────────────────────────────────
@@ -43,11 +41,10 @@ controls.dampingFactor  = 0.06;
 controls.minDistance    = 80;
 controls.maxDistance    = 900;
 
-// ─── Lighting — product photography setup ──────────────────────────────────────
+// ─── Lighting ────────────────────────────────────────────────────────────────
 
 scene.add(new THREE.AmbientLight(0xf8f8f8, 0.30));
 
-// Key — large soft source, upper-right-front
 const keyLight = new THREE.DirectionalLight(0xfff0e8, 0.78);
 keyLight.position.set(160, 380, 180);
 keyLight.castShadow = true;
@@ -59,12 +56,10 @@ ksc.near  =  10;
 ksc.far   = 900;
 scene.add(keyLight);
 
-// Fill — cool left fill, lifted to avoid flat shadows on dark surface
 const fillLight = new THREE.DirectionalLight(0xe4ecff, 0.28);
 fillLight.position.set(-280, 200, 80);
 scene.add(fillLight);
 
-// Kicker — warm rear-upper edge light to reveal silhouette on dark surface
 const kickLight = new THREE.DirectionalLight(0xffd8b8, 0.50);
 kickLight.position.set(-60, 220, -320);
 scene.add(kickLight);
@@ -102,21 +97,18 @@ function makeTex(r0, g0, b0, amp, rg, rb) {
   return tex;
 }
 
-// A — Warm Ash  #CEC8BD  warm grey-putty, dense and dry
 const matWarmAsh = new THREE.MeshStandardMaterial({
   map:       makeTex(0xCE, 0xC8, 0xBD, 14, 0.96, 0.90),
   roughness: 0.97,
   metalness: 0.0,
 });
 
-// B — Sora Dora  #D2CEC8  pale mineral taupe, lighter and cleaner
 const matSoraDora = new THREE.MeshStandardMaterial({
   map:       makeTex(0xD2, 0xCE, 0xC8, 10, 0.97, 0.94),
   roughness: 0.96,
   metalness: 0.0,
 });
 
-// C — Deep Gunmetal  #454649  dense, architectural, satin-matte
 const matTwyneGrey = new THREE.MeshStandardMaterial({
   color:     0x454649,
   roughness: 0.84,
@@ -147,6 +139,15 @@ const matRecess = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 });
 
+// Tonal groove: same gunmetal family, only darker enough to read through shadow.
+const matGroove = new THREE.MeshBasicMaterial({
+  color:       0x232426,
+  transparent: true,
+  opacity:     0.52,
+  depthWrite:  false,
+  side:        THREE.DoubleSide,
+});
+
 function applyMaterial(mat) {
   boxMat = mat;
   if (!rootGroup) return;
@@ -154,6 +155,7 @@ function applyMaterial(mat) {
     if (
       obj.isMesh &&
       !obj.userData.isLabel &&
+      !obj.userData.isGroove &&
       obj.material !== matGlass &&
       obj.material !== matCap &&
       obj.material !== matRecess
@@ -173,7 +175,7 @@ function toggleCheck() {
   btn.classList.toggle('active', checkActive);
   const skip = new Set([matGlass, matCap, matRecess]);
   if (rootGroup) rootGroup.traverse(obj => {
-    if (!obj.isMesh || obj.userData.isLabel || skip.has(obj.material)) return;
+    if (!obj.isMesh || obj.userData.isLabel || obj.userData.isGroove || skip.has(obj.material)) return;
     obj.material = checkActive ? matBasicCheck : boxMat;
   });
 }
@@ -192,6 +194,7 @@ function slab(group, w, h, d, x, y, z) {
 }
 
 // ─── Typography / blind-deboss preview ───────────────────────────────────────
+
 function makeTextMaterial(lines, {
   width = 1024,
   height = 256,
@@ -267,6 +270,58 @@ function addLabel(parent, lines, {
   return mesh;
 }
 
+// ─── Incised line system ─────────────────────────────────────────────────────
+// A single very fine top perimeter groove, inset 7 mm, with short returns down
+// the vertical faces. This keeps the current box color and reads as a cut in the
+// surface rather than a printed graphic.
+
+function addGrooveStrip(parent, w, h, x, y, z, rx = 0, ry = 0, rz = 0) {
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matGroove);
+  mesh.position.set(x, y, z);
+  mesh.rotation.set(rx, ry, rz);
+  mesh.userData.isGroove = true;
+  mesh.renderOrder = 8;
+  parent.add(mesh);
+  return mesh;
+}
+
+function addIncisedFrame(parent, W, D, lidBlockH) {
+  const inset = 7.0;
+  const lineW = 0.26;
+  const offset = 0.10;
+  const returnDepth = 7.0;
+
+  const innerW = W - inset * 2;
+  const innerD = D - inset * 2;
+  const topY = lidBlockH + offset;
+
+  // Top face: one quiet rectangular incision.
+  addGrooveStrip(parent, innerW, lineW, 0, topY,  D / 2 - inset, -Math.PI / 2);
+  addGrooveStrip(parent, innerW, lineW, 0, topY, -D / 2 + inset, -Math.PI / 2);
+  addGrooveStrip(parent, lineW, innerD, -W / 2 + inset, topY, 0, -Math.PI / 2);
+  addGrooveStrip(parent, lineW, innerD,  W / 2 - inset, topY, 0, -Math.PI / 2);
+
+  // Short returns down front/back so the line feels cut through the object.
+  const returnY = lidBlockH - returnDepth / 2;
+  const frontZ = D / 2 + offset;
+  const backZ  = -D / 2 - offset;
+  const returnH = returnDepth;
+
+  addGrooveStrip(parent, lineW, returnH, -W / 2 + inset, returnY, frontZ);
+  addGrooveStrip(parent, lineW, returnH,  W / 2 - inset, returnY, frontZ);
+  addGrooveStrip(parent, lineW, returnH, -W / 2 + inset, returnY, backZ, 0, Math.PI, 0);
+  addGrooveStrip(parent, lineW, returnH,  W / 2 - inset, returnY, backZ, 0, Math.PI, 0);
+
+  // Matching returns on left/right faces.
+  const leftX  = -W / 2 - offset;
+  const rightX =  W / 2 + offset;
+
+  addGrooveStrip(parent, lineW, returnH, leftX, returnY, -D / 2 + inset, 0, -Math.PI / 2, 0);
+  addGrooveStrip(parent, lineW, returnH, leftX, returnY,  D / 2 - inset, 0, -Math.PI / 2, 0);
+  addGrooveStrip(parent, lineW, returnH, rightX, returnY, -D / 2 + inset, 0,  Math.PI / 2, 0);
+  addGrooveStrip(parent, lineW, returnH, rightX, returnY,  D / 2 - inset, 0,  Math.PI / 2, 0);
+}
+
 function buildBox() {
   if (rootGroup) scene.remove(rootGroup);
 
@@ -331,6 +386,9 @@ function buildBox() {
   lidGroup.add(lidMesh);
 
   lidGroup.position.y = seamY + C;
+
+  // New structural line language.
+  addIncisedFrame(lidGroup, W, D, lidBlockH);
 
   // ── TWYNE copy system — centered larger type pass ─────────────────────────
   const SURFACE_OFFSET = 0.08;
