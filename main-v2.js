@@ -22,7 +22,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.90;
+renderer.toneMappingExposure = 0.92;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.localClippingEnabled = true;
 
@@ -39,9 +39,9 @@ controls.minDistance = 80;
 controls.maxDistance = 900;
 controls.target.set(0, 46, 0);
 
-scene.add(new THREE.AmbientLight(0xf8f8f8, 0.26));
+scene.add(new THREE.AmbientLight(0xf8f8f8, 0.28));
 
-const keyLight = new THREE.DirectionalLight(0xfff0e8, 0.86);
+const keyLight = new THREE.DirectionalLight(0xfff0e8, 0.92);
 keyLight.position.set(160, 380, 180);
 keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(2048, 2048);
@@ -52,11 +52,11 @@ ksc.near = 10;
 ksc.far = 900;
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0xe4ecff, 0.20);
+const fillLight = new THREE.DirectionalLight(0xe4ecff, 0.22);
 fillLight.position.set(-280, 200, 80);
 scene.add(fillLight);
 
-const kickLight = new THREE.DirectionalLight(0xffd8b8, 0.42);
+const kickLight = new THREE.DirectionalLight(0xffd8b8, 0.48);
 kickLight.position.set(-60, 220, -320);
 scene.add(kickLight);
 
@@ -145,20 +145,20 @@ let checkActive = false;
 let sectionActive = false;
 const sectionPlane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
 
-// Supporting type is intentionally editorial/fashion-house, not a generic grotesk.
+// Editorial supporting face. TWYNE itself always uses the custom wordmark paths below.
 const SUPPORT_FONT = '"Bodoni Moda", Didot, "Times New Roman", serif';
 
 function makeDebossTextMaterial(lines, {
-  width = 1400,
-  height = 320,
-  padding = 60,
-  fontSize = 82,
-  leading = 1.05,
+  width = 1600,
+  height = 360,
+  padding = 64,
+  fontSize = 88,
+  leading = 1.08,
   align = 'center',
   fontFamily = SUPPORT_FONT,
   fontWeight = '500',
   tracking = 5,
-  depth = 0.55,
+  depth = 0.70,
 } = {}) {
   const cv = document.createElement('canvas');
   cv.width = width;
@@ -167,6 +167,7 @@ function makeDebossTextMaterial(lines, {
   ctx.clearRect(0, 0, width, height);
   ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   ctx.textBaseline = 'middle';
+  ctx.fontKerning = 'normal';
   if ('letterSpacing' in ctx) ctx.letterSpacing = `${tracking}px`;
 
   let x = padding;
@@ -183,16 +184,16 @@ function makeDebossTextMaterial(lines, {
   const lineH = fontSize * leading;
   const totalH = (lines.length - 1) * lineH;
   const y0 = height / 2 - totalH / 2;
-  const edge = Math.max(1.0, 2.4 * depth);
+  const edge = Math.max(1.6, 3.4 * depth);
 
-  // Blind deboss illusion: same substrate, only light/shadow reveals the cut.
-  ctx.fillStyle = `rgba(245,245,238,${0.075 * depth})`;
+  // Stronger blind-deboss read: still tonal, but the inner wall and light lip are clearer.
+  ctx.fillStyle = `rgba(246,246,239,${0.16 * depth})`;
   lines.forEach((line, i) => ctx.fillText(line, x - edge, y0 + i * lineH - edge));
 
-  ctx.fillStyle = `rgba(0,0,0,${0.30 * depth})`;
+  ctx.fillStyle = `rgba(0,0,0,${0.58 * depth})`;
   lines.forEach((line, i) => ctx.fillText(line, x + edge, y0 + i * lineH + edge));
 
-  ctx.fillStyle = `rgba(10,10,9,${0.16 + 0.14 * depth})`;
+  ctx.fillStyle = `rgba(6,6,5,${0.28 + 0.22 * depth})`;
   lines.forEach((line, i) => ctx.fillText(line, x, y0 + i * lineH));
 
   const tex = new THREE.CanvasTexture(cv);
@@ -212,7 +213,7 @@ function addDebossLabel(parent, lines, {
   w, h,
   x = 0, y = 0, z = 0,
   rx = 0, ry = 0, rz = 0,
-  depth = 0.55,
+  depth = 0.70,
   ...textOpts
 }) {
   const mesh = new THREE.Mesh(
@@ -222,7 +223,7 @@ function addDebossLabel(parent, lines, {
   mesh.position.set(x, y, z);
   mesh.rotation.set(rx, ry, rz);
   mesh.userData.isLabel = true;
-  mesh.renderOrder = 20;
+  mesh.renderOrder = 30;
   parent.add(mesh);
   return mesh;
 }
@@ -248,7 +249,7 @@ function makeWordmarkDebossMaterial(depth = 1) {
   const markH = 75 * scale;
   const ox = (cv.width - targetW) / 2;
   const oy = (cv.height - markH) / 2;
-  const edge = 2.2 * depth;
+  const edge = 2.8 * depth;
 
   function draw(dx, dy, fill) {
     ctx.save();
@@ -259,9 +260,9 @@ function makeWordmarkDebossMaterial(depth = 1) {
     ctx.restore();
   }
 
-  draw(-edge, -edge, `rgba(245,245,238,${0.11 * depth})`);
-  draw(edge, edge, `rgba(0,0,0,${0.44 * depth})`);
-  draw(0, 0, `rgba(8,8,7,${0.34 * depth})`);
+  draw(-edge, -edge, `rgba(246,246,239,${0.16 * depth})`);
+  draw(edge, edge, `rgba(0,0,0,${0.58 * depth})`);
+  draw(0, 0, `rgba(5,5,4,${0.46 * depth})`);
 
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -289,7 +290,7 @@ function addDebossWordmark(parent, {
   mesh.position.set(x, y, z);
   mesh.rotation.set(rx, ry, rz);
   mesh.userData.isLabel = true;
-  mesh.renderOrder = 24;
+  mesh.renderOrder = 34;
   parent.add(mesh);
   return mesh;
 }
@@ -359,13 +360,13 @@ function buildBox() {
   lidGroup.add(lidMesh);
   lidGroup.position.y = seamY + C;
 
-  // No decorative frame. The object is carried by surface, typography and negative space.
-  const S = 0.145;
+  // Clean exterior — no decorative frame.
+  const S = 0.19;
 
   // TOP — brand only.
   addDebossWordmark(lidGroup, {
-    w: 69,
-    h: 6.75,
+    w: 70,
+    h: 6.85,
     x: 0,
     y: lidBlockH + S,
     z: 0,
@@ -373,98 +374,91 @@ function buildBox() {
     depth: 1.0,
   });
 
-  // FRONT — volume identity. Small first line, stronger collection title.
+  // FRONT — Volume identity.
   addDebossLabel(lidGroup, ['VOLUME I'], {
-    w: 36,
-    h: 7,
+    w: 39,
+    h: 7.5,
     x: 0,
-    y: lidBlockH / 2 + 5.2,
+    y: lidBlockH / 2 + 5.5,
     z: D / 2 + S,
-    fontSize: 74,
+    fontSize: 82,
     tracking: 7,
-    fontWeight: '500',
-    depth: 0.48,
+    depth: 0.72,
   });
 
   addDebossLabel(lidGroup, ['KENOPSIA'], {
-    w: 48,
-    h: 9,
+    w: 52,
+    h: 10,
     x: 0,
-    y: lidBlockH / 2 - 4.4,
+    y: lidBlockH / 2 - 4.6,
     z: D / 2 + S + 0.002,
-    fontSize: 102,
+    fontSize: 114,
     tracking: 6,
-    fontWeight: '500',
-    depth: 0.66,
+    depth: 0.92,
   });
 
   // BACK — intentionally blank.
 
-  // LEFT — establishes TWYNE as a house.
+  // LEFT — establishes the house.
   addDebossLabel(lidGroup, ['A HAUS OF VOLUMES'], {
-    w: 58,
-    h: 8,
+    w: 62,
+    h: 9,
     x: -W / 2 - S,
     y: lidBlockH / 2,
     z: 0,
     ry: -Math.PI / 2,
-    fontSize: 78,
+    fontSize: 86,
     tracking: 5,
-    fontWeight: '500',
-    depth: 0.46,
+    depth: 0.76,
   });
 
-  // RIGHT — the two-state architecture. EDP is the active state on this box.
+  // RIGHT — two-state system. EDP is active on this box.
   addDebossLabel(lidGroup, ['TWO STATES'], {
-    w: 38,
-    h: 6,
+    w: 42,
+    h: 6.5,
     x: W / 2 + S,
-    y: lidBlockH / 2 + 10,
+    y: lidBlockH / 2 + 10.5,
     z: 0,
     ry: Math.PI / 2,
-    fontSize: 68,
+    fontSize: 76,
     tracking: 6,
-    fontWeight: '500',
-    depth: 0.34,
+    depth: 0.62,
   });
 
   addDebossLabel(lidGroup, ['EAU DE PARFUM'], {
-    w: 54,
-    h: 8,
+    w: 58,
+    h: 9,
     x: W / 2 + S + 0.002,
     y: lidBlockH / 2,
     z: 0,
     ry: Math.PI / 2,
-    fontSize: 82,
+    fontSize: 90,
     tracking: 5,
-    fontWeight: '500',
-    depth: 0.64,
+    depth: 0.94,
   });
 
   addDebossLabel(lidGroup, ['ABSOLU'], {
-    w: 30,
-    h: 6,
+    w: 34,
+    h: 6.5,
     x: W / 2 + S + 0.004,
-    y: lidBlockH / 2 - 10,
+    y: lidBlockH / 2 - 10.5,
     z: 0,
     ry: Math.PI / 2,
-    fontSize: 72,
+    fontSize: 78,
     tracking: 6,
-    fontWeight: '500',
-    depth: 0.24,
+    depth: 0.48,
   });
 
-  // THIN BASE — technical size only.
+  // THIN BASE — size only.
   addDebossLabel(rootGroup, ['50 ML / 1.7 FL. OZ.'], {
-    w: 42,
-    h: 7,
+    w: 46,
+    h: 7.5,
     x: 0,
     y: seamY / 2,
     z: D / 2 + S,
-    fontSize: 62,
+    fontSize: 68,
     tracking: 4,
-    fontWeight: '500',
-    depth: 0.34,
+    depth: 0.58,
   });
 
   controls.target.set(0, H / 2, 0);
@@ -598,10 +592,10 @@ window.addEventListener('resize', () => {
   renderer.render(scene, camera);
 })();
 
-// Build only after the editorial face is available so Canvas never falls back to Arial.
+// Build only after Bodoni has had a chance to load; fallback remains visible if it does not.
 if (document.fonts?.load) {
   Promise.all([
-    document.fonts.load('500 82px "Bodoni Moda"'),
+    document.fonts.load('500 90px "Bodoni Moda"'),
     document.fonts.ready,
   ]).finally(buildBox);
 } else {
