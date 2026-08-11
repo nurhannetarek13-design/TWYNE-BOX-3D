@@ -155,7 +155,7 @@ const matFrameHighlight = new THREE.MeshBasicMaterial({
   side: THREE.DoubleSide,
 });
 
-// Exact custom TWYNE artwork traced from the supplied wordmark.
+// Exact custom TWYNE artwork.
 const wordmarkTexture = new THREE.TextureLoader().load('./assets/twyne-wordmark.svg');
 wordmarkTexture.colorSpace = THREE.SRGBColorSpace;
 
@@ -300,17 +300,14 @@ function addWordmark(parent, {
   ry = 0,
   rz = 0,
 }) {
-  const geo = new THREE.PlaneGeometry(w, h);
-
-  // Highlight lip first, then the darker recessed core.
-  const hi = new THREE.Mesh(geo, matWordmarkHighlight);
+  const hi = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matWordmarkHighlight);
   hi.position.set(x - 0.08, y + 0.08, z);
   hi.rotation.set(rx, ry, rz);
   hi.userData.isLabel = true;
   hi.renderOrder = 18;
   parent.add(hi);
 
-  const shadow = new THREE.Mesh(geo.clone(), matWordmarkShadow);
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matWordmarkShadow);
   shadow.position.set(x + 0.06, y - 0.06, z + 0.008);
   shadow.rotation.set(rx, ry, rz);
   shadow.userData.isLabel = true;
@@ -319,8 +316,6 @@ function addWordmark(parent, {
 }
 
 // ─── Double recessed panel system ────────────────────────────────────────────
-// The CELINE-like double rule now belongs to the whole LID object:
-// front, back, both sides and top. The thin base intentionally stays clean.
 function addReliefStrip(parent, w, h, x, y, orientation = 'horizontal') {
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matFrameShadow);
   shadow.position.set(x, y, 0);
@@ -383,7 +378,6 @@ function addAllLidFrames(parent, W, D, lidBlockH) {
   const o = 0.105;
   const cy = lidBlockH / 2;
 
-  // FRONT
   addDoubleFrameFace(parent, {
     faceW: W,
     faceH: lidBlockH,
@@ -391,7 +385,6 @@ function addAllLidFrames(parent, W, D, lidBlockH) {
     z: D / 2 + o,
   });
 
-  // BACK
   addDoubleFrameFace(parent, {
     faceW: W,
     faceH: lidBlockH,
@@ -400,7 +393,6 @@ function addAllLidFrames(parent, W, D, lidBlockH) {
     ry: Math.PI,
   });
 
-  // LEFT
   addDoubleFrameFace(parent, {
     faceW: D,
     faceH: lidBlockH,
@@ -409,7 +401,6 @@ function addAllLidFrames(parent, W, D, lidBlockH) {
     ry: -Math.PI / 2,
   });
 
-  // RIGHT
   addDoubleFrameFace(parent, {
     faceW: D,
     faceH: lidBlockH,
@@ -418,7 +409,6 @@ function addAllLidFrames(parent, W, D, lidBlockH) {
     ry: Math.PI / 2,
   });
 
-  // TOP
   addDoubleFrameFace(parent, {
     faceW: W,
     faceH: D,
@@ -446,20 +436,17 @@ function buildBox() {
   rootGroup = new THREE.Group();
   scene.add(rootGroup);
 
-  // Thin base.
   const baseMesh = new THREE.Mesh(new RoundedBoxGeometry(W, seamY, D, 3, ch), boxMat);
   baseMesh.position.set(0, seamY / 2, 0);
   baseMesh.castShadow = true;
   baseMesh.receiveShadow = true;
   rootGroup.add(baseMesh);
 
-  // Recess mark under bottle.
   const recessT = 0.3;
   const recessMesh = new THREE.Mesh(new THREE.BoxGeometry(50, recessT, 50), matRecess);
   recessMesh.position.set(0, seamY + recessT / 2, 0);
   rootGroup.add(recessMesh);
 
-  // Bottle placeholder — current locked proportions.
   const bW = 49.07;
   const bD = 49.60;
   const bBodyH = 49.68;
@@ -506,7 +493,6 @@ function buildBox() {
     `CAP PROTRUDES: capTop ${capTopY.toFixed(2)} >= lidCeiling ${lidInnerCeilingY}`
   );
 
-  // Deep lid.
   lidGroup = new THREE.Group();
   rootGroup.add(lidGroup);
 
@@ -528,59 +514,75 @@ function buildBox() {
 
   const SURFACE_OFFSET = 0.135;
 
-  // TOP — centered and larger.
-  addLabel(lidGroup, ['VOLUME I', 'KENOPSIA'], {
-    w: 50,
-    h: 17,
+  // TOP — TWYNE is the hero face, using the exact custom wordmark.
+  // Width nearly fills the inner recessed panel, like the supplied reference.
+  addWordmark(lidGroup, {
+    w: 66,
+    h: 6.46,
     x: 0,
-    y: lidBlockH + SURFACE_OFFSET,
+    y: lidBlockH + SURFACE_OFFSET + 0.02,
     z: 0,
     rx: -Math.PI / 2,
-    fontSize: 110,
+  });
+
+  // FRONT — volume identity.
+  addLabel(lidGroup, ['VOLUME I', 'KENOPSIA'], {
+    w: 54,
+    h: 18,
+    x: 0,
+    y: lidBlockH / 2,
+    z: D / 2 + SURFACE_OFFSET,
+    fontSize: 118,
     leading: 1.12,
     align: 'center',
-    padding: 28,
+    padding: 22,
     fontWeight: '600',
   });
 
-  // LEFT — centered and larger.
-  addLabel(lidGroup, ['STATE / LIGHT'], {
-    w: 42,
-    h: 9,
-    x: -W / 2 - SURFACE_OFFSET,
+  // BACK — house code.
+  addLabel(lidGroup, ['TWO STATES.', 'A THIRD FORM.'], {
+    w: 58,
+    h: 18,
+    x: 0,
     y: lidBlockH / 2,
-    z: 0,
-    ry: -Math.PI / 2,
-    fontSize: 100,
+    z: -D / 2 - SURFACE_OFFSET,
+    ry: Math.PI,
+    fontSize: 108,
+    leading: 1.14,
     align: 'center',
     padding: 18,
     fontWeight: '600',
   });
 
-  // FRONT — exact TWYNE wordmark, much larger, centered inside the inner frame.
-  addWordmark(lidGroup, {
-    w: 66,
-    h: 6.46,
-    x: 0,
-    y: lidBlockH / 2,
-    z: D / 2 + SURFACE_OFFSET + 0.02,
-  });
-
-  // RIGHT — centered and larger.
-  addLabel(lidGroup, ['A HAUS OF VOLUMES'], {
-    w: 50,
-    h: 9,
-    x: W / 2 + SURFACE_OFFSET,
+  // LEFT — state nomenclature.
+  addLabel(lidGroup, ['STATE / LIGHT'], {
+    w: 46,
+    h: 10,
+    x: -W / 2 - SURFACE_OFFSET,
     y: lidBlockH / 2,
     z: 0,
-    ry: Math.PI / 2,
-    fontSize: 84,
+    ry: -Math.PI / 2,
+    fontSize: 108,
     align: 'center',
     padding: 16,
     fontWeight: '600',
   });
 
-  // THIN BASE — centered technical information, slightly larger.
+  // RIGHT — house descriptor.
+  addLabel(lidGroup, ['A HAUS OF VOLUMES'], {
+    w: 54,
+    h: 10,
+    x: W / 2 + SURFACE_OFFSET,
+    y: lidBlockH / 2,
+    z: 0,
+    ry: Math.PI / 2,
+    fontSize: 92,
+    align: 'center',
+    padding: 14,
+    fontWeight: '600',
+  });
+
+  // THIN BASE — technical information only.
   addLabel(rootGroup, ['PERFUME / PARFUM', '50 ML / 1.7 FL. OZ.'], {
     w: 46,
     h: 11,
