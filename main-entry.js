@@ -221,13 +221,13 @@ function addFilmFrame(lidGroup, lidSize) {
 }
 
 // Sora Dora-style protective rim: the raised part sits near the OUTER EDGE of the
-// base, not around the bottle. The wide central area stays open. This low perimeter
-// wall protects the upright bottle from sliding/falling when the deep lid is lifted.
+// base, not around the bottle. The entire field between the bottle and the rim stays
+// empty so future TWYNE objects/cards/accessories can sit around the bottle.
 function addRaisedBaseTray(parent, baseMesh, baseSize) {
   const rimOuterW = 84;
   const rimOuterD = 84;
-  const wall = 3.4;
-  const rimH = 9.5;
+  const wall = 2.8;
+  const rimH = 12.5;
 
   const rimInnerW = rimOuterW - wall * 2;
   const rimInnerD = rimOuterD - wall * 2;
@@ -238,10 +238,8 @@ function addRaisedBaseTray(parent, baseMesh, baseSize) {
   const material = baseMesh.material;
 
   const parts = [
-    // Front and back protective lips sit almost on the base perimeter.
     { g: new THREE.BoxGeometry(rimOuterW, rimH, wall), p: [0, rimY, zOffset] },
     { g: new THREE.BoxGeometry(rimOuterW, rimH, wall), p: [0, rimY, -zOffset] },
-    // Side lips close the perimeter while leaving a large open field around bottle.
     { g: new THREE.BoxGeometry(wall, rimH, rimInnerD), p: [xOffset, rimY, 0] },
     { g: new THREE.BoxGeometry(wall, rimH, rimInnerD), p: [-xOffset, rimY, 0] },
   ];
@@ -253,6 +251,28 @@ function addRaisedBaseTray(parent, baseMesh, baseSize) {
     mesh.receiveShadow = true;
     mesh.userData.isRaisedBaseTray = true;
     originalGroupAdd.call(parent, mesh);
+  }
+}
+
+// Lower the bottle independently of the protective rim. The rim is only a guard
+// at the base perimeter; it never supports, grips, or determines bottle position.
+// The bottle body + cap are moved down together by 4.5 mm to increase the sink.
+function lowerBottleIndependentOfRim(obj, size) {
+  if (!obj?.isMesh || obj.userData?.isRaisedBaseTray) return;
+
+  const isBottleBody =
+    size.x > 48 && size.x < 50.5 &&
+    size.y > 48 && size.y < 51 &&
+    size.z > 48.5 && size.z < 51;
+
+  const isBottleCap =
+    size.x > 44 && size.x < 46.5 &&
+    size.y > 26 && size.y < 29 &&
+    size.z > 44 && size.z < 47;
+
+  if (isBottleBody || isBottleCap) {
+    obj.position.y -= 4.5;
+    obj.userData.isBottleLowered = true;
   }
 }
 
@@ -270,6 +290,8 @@ THREE.Group.prototype.add = function(...objects) {
 
     const size = new THREE.Vector3();
     bb.getSize(size);
+
+    lowerBottleIndependentOfRim(obj, size);
 
     const isOuterBase =
       size.x > 84 && size.z > 84 &&
