@@ -48,7 +48,6 @@ CanvasRenderingContext2D.prototype.putImageData = function(imageData, ...args) {
       ctx.save();
       ctx.lineWidth = 1;
 
-      // Fine vertical warp — slightly stronger, like a tight luxury linen wrap.
       for (let x = 1.5; x < w; x += 5) {
         ctx.strokeStyle = 'rgba(238,238,232,0.038)';
         ctx.beginPath();
@@ -63,7 +62,6 @@ CanvasRenderingContext2D.prototype.putImageData = function(imageData, ...args) {
         ctx.stroke();
       }
 
-      // Finer horizontal weft — lower contrast so it never reads as a grid.
       for (let y = 2.5; y < h; y += 6) {
         ctx.strokeStyle = 'rgba(238,238,232,0.026)';
         ctx.beginPath();
@@ -103,26 +101,25 @@ CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
   return originalFillText.call(this, replacements[text] ?? text, ...args);
 };
 
-function makeMicroTextMaterial(lines, { align = 'center' } = {}) {
+function makeMicroTextMaterial(lines) {
   const cv = document.createElement('canvas');
   cv.width = 1400;
   cv.height = 300;
   const ctx = cv.getContext('2d');
   ctx.clearRect(0, 0, cv.width, cv.height);
-  ctx.textAlign = align;
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fontKerning = 'normal';
   if ('letterSpacing' in ctx) ctx.letterSpacing = '7px';
 
   const lineH = 82;
   const y0 = cv.height / 2 - ((lines.length - 1) * lineH) / 2;
-  const tx = align === 'left' ? 34 : align === 'right' ? cv.width - 34 : cv.width / 2;
 
   lines.forEach((line, i) => {
     const y = y0 + i * lineH;
     ctx.font = `${i === 0 ? 600 : 500} ${i === 0 ? 60 : 48}px \"Manrope\", \"Helvetica Neue\", Arial, sans-serif`;
     ctx.fillStyle = i === 0 ? 'rgba(7,7,6,0.68)' : 'rgba(7,7,6,0.48)';
-    ctx.fillText(line, tx, y);
+    ctx.fillText(line, cv.width / 2, y);
   });
 
   const tex = new THREE.CanvasTexture(cv);
@@ -144,7 +141,6 @@ function makeFilmInsetFrameMaterial() {
   const ctx = cv.getContext('2d');
   ctx.clearRect(0, 0, cv.width, cv.height);
 
-  // Same-substrate blind inset: one tiny light lip + one deeper inner wall.
   const m = 24;
   ctx.lineWidth = 8;
   ctx.strokeStyle = 'rgba(244,244,238,0.085)';
@@ -191,7 +187,6 @@ function addFilmFrame(lidGroup, lidSize) {
     side: THREE.DoubleSide,
   });
 
-  // Subtle pressed frame around the campaign still. No printed border, no contrast colour.
   const insetFrame = new THREE.Mesh(
     new THREE.PlaneGeometry(78.5, 60),
     makeFilmInsetFrameMaterial()
@@ -211,17 +206,15 @@ function addFilmFrame(lidGroup, lidSize) {
   image.userData.isFilmFrame = true;
   lidGroup.add(image);
 
-  // Editorial asymmetry: the still remains centred, but its metadata locks to the
-  // same left edge instead of floating in the middle.
   const meta = new THREE.Mesh(
-    new THREE.PlaneGeometry(66, 8.5),
+    new THREE.PlaneGeometry(56, 8.5),
     makeMicroTextMaterial([
       'VOLUME I — KENOPSIA',
       'FILM 01 / FRAME 0047',
       'TWYNEHAUS.COM',
-    ], { align: 'left' })
+    ])
   );
-  meta.position.set(-4, 9.5, -lidSize.z / 2 - 0.29);
+  meta.position.set(0, 9.5, -lidSize.z / 2 - 0.29);
   meta.rotation.y = Math.PI;
   meta.renderOrder = 42;
   meta.userData.isLabel = true;
@@ -229,96 +222,10 @@ function addFilmFrame(lidGroup, lidSize) {
   lidGroup.add(meta);
 }
 
-function near(a, b, tolerance = 0.7) {
-  return Math.abs(a - b) <= tolerance;
-}
-
-// Shift supporting information onto a consistent editorial grid. The logo and
-// campaign still remain centred; everything else works off an intentional axis.
-function applyEditorialAsymmetry(obj) {
-  if (!obj?.isMesh || !obj.geometry || !obj.userData?.isLabel) return;
-  if (
-    obj.userData.isFilmFrame ||
-    obj.userData.isFilmInsetFrame ||
-    obj.userData.isFilmMeta ||
-    obj.userData.isNewTwyneLogo
-  ) return;
-
-  const p = obj.geometry.parameters;
-  if (!p) return;
-  const w = p.width ?? 0;
-  const h = p.height ?? 0;
-  const rx = obj.rotation.x;
-  const ry = obj.rotation.y;
-
-  // Keep the house wordmark alone in the centre of the top panel.
-  if (near(w, 70, 2) && h >= 6 && h <= 8 && Math.abs(rx + Math.PI / 2) < 0.1) return;
-
-  const isFront = Math.abs(rx) < 0.08 && Math.abs(ry) < 0.08 && obj.position.z > 40;
-  const isLeft = Math.abs(ry + Math.PI / 2) < 0.08;
-  const isRight = Math.abs(ry - Math.PI / 2) < 0.08;
-
-  if (isFront && near(w, 39) && near(h, 7.5)) {
-    // VOLUME I — same left edge as KENOPSIA, placed in the lower third.
-    obj.position.x = -10.5;
-    obj.position.y -= 13.5;
-    return;
-  }
-
-  if (isFront && near(w, 52) && near(h, 10)) {
-    // KENOPSIA — larger anchor below VOLUME I.
-    obj.position.x = -4;
-    obj.position.y -= 13.5;
-    return;
-  }
-
-  if (isFront && near(w, 46) && near(h, 7.5)) {
-    // Technical base copy shares the same editorial left edge.
-    obj.position.x = -7;
-    return;
-  }
-
-  if (isLeft && near(w, 62) && near(h, 9)) {
-    // House descriptor becomes a quiet lower-edge signature, not a centred slogan.
-    obj.scale.x = 0.72;
-    obj.position.y -= 22;
-    obj.position.z = -7.5;
-    return;
-  }
-
-  if (isRight && near(w, 42) && near(h, 6.5)) {
-    // STATE I — small entry into the state system.
-    obj.scale.x = 0.82;
-    obj.position.y -= 6;
-    obj.position.z = 31 - (w * obj.scale.x) / 2;
-    return;
-  }
-
-  if (isRight && near(w, 58) && near(h, 9)) {
-    // EAU DE PARFUM — strongest line in the state block.
-    obj.scale.x = 0.88;
-    obj.position.y -= 6;
-    obj.position.z = 31 - (w * obj.scale.x) / 2;
-    return;
-  }
-
-  if (isRight && near(w, 34) && near(h, 6.5)) {
-    // 01 — 02 — quiet system code on the same front-edge axis.
-    obj.scale.x = 0.78;
-    obj.position.y -= 6;
-    obj.position.z = 31 - (w * obj.scale.x) / 2;
-  }
-}
-
 const originalGroupAdd = THREE.Group.prototype.add;
 let injectingFilmBack = false;
 THREE.Group.prototype.add = function(...objects) {
   const result = originalGroupAdd.apply(this, objects);
-
-  // Apply the editorial layout even after the lid has already received its film
-  // system; otherwise later labels would stay centred.
-  for (const obj of objects) applyEditorialAsymmetry(obj);
-
   if (injectingFilmBack || this.userData.filmBackInjected) return result;
 
   for (const obj of objects) {
