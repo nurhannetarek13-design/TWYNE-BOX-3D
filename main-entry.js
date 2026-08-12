@@ -1,7 +1,12 @@
 import * as THREE from 'three';
 
-// Supporting copy: quiet neo-grotesk system to sit behind the custom TWYNE wordmark.
-// Helvetica Neue is preferred; Arial Nova / Helvetica / Arial are fallbacks.
+// Load a visibly different, fashion-editorial grotesk for all supporting copy.
+// The custom TWYNE wordmark remains untouched.
+const supportingFontLink = document.createElement('link');
+supportingFontLink.rel = 'stylesheet';
+supportingFontLink.href = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&display=swap';
+document.head.appendChild(supportingFontLink);
+
 const canvasFontDescriptor = Object.getOwnPropertyDescriptor(
   CanvasRenderingContext2D.prototype,
   'font'
@@ -14,7 +19,7 @@ if (canvasFontDescriptor?.set && canvasFontDescriptor?.get) {
     get() { return canvasFontDescriptor.get.call(this); },
     set(value) {
       const next = String(value)
-        .replace(/\"Bodoni Moda\",\s*Didot,\s*\"Times New Roman\",\s*serif/g, '\"Helvetica Neue\", \"Arial Nova\", Helvetica, Arial, sans-serif')
+        .replace(/\"Bodoni Moda\",\s*Didot,\s*\"Times New Roman\",\s*serif/g, '\"Inter Tight\", \"Helvetica Neue\", Helvetica, Arial, sans-serif')
         .replace(/^500\s+/, '400 ');
       canvasFontDescriptor.set.call(this, next);
     },
@@ -91,13 +96,30 @@ THREE.Vector3.prototype.set = function(x, y, z) {
   return originalVectorSet.call(this, x, y, z);
 };
 
+// Main-v2 already supplies tracking values, but the previous spacing was too tight.
+// Increase every supporting line enough to be visibly editorial while preserving the logo.
 const originalFillText = CanvasRenderingContext2D.prototype.fillText;
 CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
   const replacements = {
     'TWO STATES': 'STATE I',
     'ABSOLU': '01 — 02',
   };
-  return originalFillText.call(this, replacements[text] ?? text, ...args);
+
+  const hasSpacing = 'letterSpacing' in this;
+  const previousSpacing = hasSpacing ? this.letterSpacing : null;
+
+  if (hasSpacing) {
+    const current = parseFloat(previousSpacing) || 0;
+    this.letterSpacing = `${Math.max(11, current * 1.85)}px`;
+  }
+
+  const result = originalFillText.call(this, replacements[text] ?? text, ...args);
+
+  if (hasSpacing && previousSpacing !== null) {
+    this.letterSpacing = previousSpacing;
+  }
+
+  return result;
 };
 
 function makeMicroTextMaterial(lines) {
@@ -109,14 +131,14 @@ function makeMicroTextMaterial(lines) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fontKerning = 'normal';
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '7px';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '9px';
 
   const lineH = 82;
   const y0 = cv.height / 2 - ((lines.length - 1) * lineH) / 2;
 
   lines.forEach((line, i) => {
     const y = y0 + i * lineH;
-    ctx.font = `${i === 0 ? 500 : 400} ${i === 0 ? 60 : 48}px \"Helvetica Neue\", \"Arial Nova\", Helvetica, Arial, sans-serif`;
+    ctx.font = `${i === 0 ? 500 : 400} ${i === 0 ? 60 : 48}px \"Inter Tight\", \"Helvetica Neue\", Helvetica, Arial, sans-serif`;
     ctx.fillStyle = i === 0 ? 'rgba(7,7,6,0.68)' : 'rgba(7,7,6,0.48)';
     ctx.fillText(line, cv.width / 2, y);
   });
@@ -319,6 +341,8 @@ THREE.Group.prototype.add = function(...objects) {
   return result;
 };
 
+await document.fonts?.load?.('400 90px "Inter Tight"');
+await document.fonts?.load?.('500 90px "Inter Tight"');
 await document.fonts?.ready;
 await import('./main-v2.js');
 
