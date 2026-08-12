@@ -104,7 +104,9 @@ THREE.Vector3.prototype.set = function(x, y, z) {
   return originalVectorSet.call(this, x, y, z);
 };
 
-// Main-v2 supplies tracking values; widen them for an editorial house feel.
+// Supporting box copy is FLAT tonal print. Only the TWYNE wordmark keeps the
+// blind-deboss treatment (it is drawn separately with vector paths in main-logo.js).
+// KENOPSIA gets noticeably wider tracking than the rest of the system.
 const originalFillText = CanvasRenderingContext2D.prototype.fillText;
 CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
   const replacements = {
@@ -112,15 +114,27 @@ CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
     'ABSOLU': '01 — 02',
   };
 
+  const resolvedText = replacements[text] ?? text;
+  const fill = String(this.fillStyle ?? '');
+
+  // main-v2 simulates deboss with a pale highlight pass + dark offset shadow pass.
+  // Suppress those passes for all type rendered with fillText, leaving only the
+  // centred tonal ink pass. The custom TWYNE vector mark is unaffected.
+  const isDebossHighlightPass = fill.startsWith('rgba(246,246,239,');
+  const isDebossShadowPass = fill.startsWith('rgba(0,0,0,');
+  if (isDebossHighlightPass || isDebossShadowPass) return;
+
   const hasSpacing = 'letterSpacing' in this;
   const previousSpacing = hasSpacing ? this.letterSpacing : null;
 
   if (hasSpacing) {
     const current = parseFloat(previousSpacing) || 0;
-    this.letterSpacing = `${Math.max(11, current * 1.85)}px`;
+    this.letterSpacing = resolvedText === 'KENOPSIA'
+      ? '20px'
+      : `${Math.max(11, current * 1.85)}px`;
   }
 
-  const result = originalFillText.call(this, replacements[text] ?? text, ...args);
+  const result = originalFillText.call(this, resolvedText, ...args);
 
   if (hasSpacing && previousSpacing !== null) {
     this.letterSpacing = previousSpacing;
