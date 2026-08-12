@@ -63,35 +63,41 @@ function noiseTexture(base, amp = 8, fibres = false) {
   cv.width = cv.height = size;
   const ctx = cv.getContext('2d');
   const c = new THREE.Color(base);
-  const r = Math.round(c.r * 255), g = Math.round(c.g * 255), b = Math.round(c.b * 255);
+  const r = Math.round(c.r * 255);
+  const g = Math.round(c.g * 255);
+  const b = Math.round(c.b * 255);
+
   ctx.fillStyle = `rgb(${r},${g},${b})`;
   ctx.fillRect(0, 0, size, size);
   const img = ctx.getImageData(0, 0, size, size);
+
   for (let i = 0; i < img.data.length; i += 4) {
     const n = (Math.random() - 0.5) * amp;
     img.data[i] = Math.max(0, Math.min(255, r + n));
-    img.data[i+1] = Math.max(0, Math.min(255, g + n));
-    img.data[i+2] = Math.max(0, Math.min(255, b + n));
+    img.data[i + 1] = Math.max(0, Math.min(255, g + n));
+    img.data[i + 2] = Math.max(0, Math.min(255, b + n));
   }
   ctx.putImageData(img, 0, 0);
+
   if (fibres) {
     ctx.globalAlpha = 0.13;
     ctx.strokeStyle = '#8f8b83';
     ctx.lineWidth = 1;
     for (let y = 0; y < size; y += 7) {
       ctx.beginPath();
-      ctx.moveTo(0, y + (Math.random() - .5) * 2);
-      ctx.lineTo(size, y + (Math.random() - .5) * 2);
+      ctx.moveTo(0, y + (Math.random() - 0.5) * 2);
+      ctx.lineTo(size, y + (Math.random() - 0.5) * 2);
       ctx.stroke();
     }
     ctx.globalAlpha = 0.08;
     for (let x = 0; x < size; x += 11) {
       ctx.beginPath();
-      ctx.moveTo(x + (Math.random() - .5) * 2, 0);
-      ctx.lineTo(x + (Math.random() - .5) * 2, size);
+      ctx.moveTo(x + (Math.random() - 0.5) * 2, 0);
+      ctx.lineTo(x + (Math.random() - 0.5) * 2, size);
       ctx.stroke();
     }
   }
+
   const tex = new THREE.CanvasTexture(cv);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(2.6, 2.0);
@@ -105,6 +111,7 @@ const linenMat = new THREE.MeshStandardMaterial({
   metalness: 0,
 });
 
+// Locked to the same Mineral Graphite family as the 50 ml box.
 const mineralMat = new THREE.MeshStandardMaterial({
   map: noiseTexture(0x4D4D49, 5, false),
   roughness: 0.90,
@@ -117,37 +124,55 @@ const insertMat = new THREE.MeshStandardMaterial({
   metalness: 0,
 });
 
-const darkInsertMat = new THREE.MeshStandardMaterial({
-  color: 0x2a2a27,
-  roughness: 0.98,
+const recessMat = new THREE.MeshStandardMaterial({
+  color: 0x252522,
+  roughness: 0.99,
   metalness: 0,
 });
 
-const capMat = new THREE.MeshStandardMaterial({ color: 0x171715, roughness: 0.52, metalness: 0.08 });
-const liquidMat = new THREE.MeshPhysicalMaterial({ color: 0xe4d5b3, roughness: 0.08, transmission: 0.54, transparent: true, opacity: 0.88, ior: 1.35 });
-const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.06, transmission: 0.94, transparent: true, opacity: 0.44, thickness: 1.1, ior: 1.5 });
+const capMat = new THREE.MeshStandardMaterial({
+  color: 0x171715,
+  roughness: 0.52,
+  metalness: 0.08,
+});
 
-function roundedBox(w,h,d,r,mat) {
-  const m = new THREE.Mesh(new RoundedBoxGeometry(w,h,d,5,r), mat);
-  m.castShadow = true;
-  m.receiveShadow = true;
-  return m;
+const liquidMat = new THREE.MeshPhysicalMaterial({
+  color: 0xe4d5b3,
+  roughness: 0.08,
+  transmission: 0.54,
+  transparent: true,
+  opacity: 0.88,
+  ior: 1.35,
+});
+
+const glassMat = new THREE.MeshPhysicalMaterial({
+  color: 0xffffff,
+  roughness: 0.06,
+  transmission: 0.94,
+  transparent: true,
+  opacity: 0.44,
+  thickness: 1.1,
+  ior: 1.5,
+});
+
+function roundedBox(w, h, d, r, mat) {
+  const mesh = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 5, r), mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
 }
 
-function textTexture(lines, width=1400, height=650) {
+function smallTextTexture(text) {
   const cv = document.createElement('canvas');
-  cv.width = width; cv.height = height;
+  cv.width = 1400;
+  cv.height = 220;
   const ctx = cv.getContext('2d');
-  ctx.clearRect(0,0,width,height);
-  ctx.fillStyle = '#e9e6df';
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = 'rgba(231,228,221,.78)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 155px Manrope, Arial';
-  ctx.fillText(lines[0], width/2, height*0.43);
-  ctx.fillStyle = 'rgba(233,230,223,.72)';
   ctx.font = '600 54px Manrope, Arial';
-  ctx.letterSpacing = '6px';
-  ctx.fillText(lines[1], width/2, height*0.66);
+  ctx.fillText(text, cv.width / 2, cv.height / 2);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -156,108 +181,198 @@ function textTexture(lines, width=1400, height=650) {
 const root = new THREE.Group();
 scene.add(root);
 
-const W = 178;
-const D = 112;
+// BASE is deliberately smaller than the lid so the lid can telescope DOWN over it.
+const BASE_W = 171;
+const BASE_D = 105;
 const BASE_H = 18;
-const COVER_T = 7;
+const INSERT_T = 8;
 
-// Base — linen wrapped, shallow presentation case.
-const base = roundedBox(W, BASE_H, D, 2.2, linenMat);
+const LID_W = 178;
+const LID_D = 112;
+const LID_H = 24;
+const LID_WALL = 3;
+const LID_TOP = 4;
+const LID_CLOSED_BOTTOM = -1;
+
+// ─── BASE — separate object ──────────────────────────────────────────────────
+const baseGroup = new THREE.Group();
+root.add(baseGroup);
+
+const base = roundedBox(BASE_W, BASE_H, BASE_D, 2.0, linenMat);
 base.position.y = 0;
-root.add(base);
+baseGroup.add(base);
 
-// Insert floating just above base.
-const insert = roundedBox(W-10, 7.5, D-10, 1.8, insertMat);
-insert.position.y = BASE_H/2 + 3.3;
-root.add(insert);
+// Insert sits inside the base rather than floating above it.
+const insert = roundedBox(BASE_W - 9, INSERT_T, BASE_D - 9, 1.6, insertMat);
+insert.position.y = BASE_H / 2 + INSERT_T / 2 - 1.5;
+baseGroup.add(insert);
+const INSERT_TOP_Y = insert.position.y + INSERT_T / 2;
 
-// Four recessed slots, deliberately widely spaced.
 const slotGroup = new THREE.Group();
-root.add(slotGroup);
+baseGroup.add(slotGroup);
 
 function addSlot(x) {
-  const slot = roundedBox(14, 4.8, 78, 5.8, darkInsertMat);
-  slot.position.set(x, BASE_H/2 + 7.1, 0);
+  // Thin dark floor only: reads as a true recess, not a raised black rail.
+  const slot = roundedBox(13.5, 0.9, 78, 5.4, recessMat);
+  slot.position.set(x, INSERT_TOP_Y + 0.06, 0);
   slotGroup.add(slot);
 }
 
 function makeVial(x, label) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.2, 55, 32), glassMat);
+
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(5.2, 5.2, 55, 32),
+    glassMat
+  );
   body.rotation.x = Math.PI / 2;
   body.castShadow = true;
   g.add(body);
 
-  const liquid = new THREE.Mesh(new THREE.CylinderGeometry(4.15, 4.15, 43, 24), liquidMat);
+  const liquid = new THREE.Mesh(
+    new THREE.CylinderGeometry(4.15, 4.15, 43, 24),
+    liquidMat
+  );
   liquid.rotation.x = Math.PI / 2;
   liquid.position.z = 2;
   g.add(liquid);
 
-  const cap = new THREE.Mesh(new THREE.CylinderGeometry(5.55, 5.55, 15, 28), capMat);
+  const cap = new THREE.Mesh(
+    new THREE.CylinderGeometry(5.55, 5.55, 15, 28),
+    capMat
+  );
   cap.rotation.x = Math.PI / 2;
   cap.position.z = 34.5;
   cap.castShadow = true;
   g.add(cap);
 
   const cv = document.createElement('canvas');
-  cv.width = 720; cv.height = 180;
+  cv.width = 720;
+  cv.height = 180;
   const ctx = cv.getContext('2d');
-  ctx.clearRect(0,0,720,180);
+  ctx.clearRect(0, 0, 720, 180);
   ctx.fillStyle = '#242421';
   ctx.font = '700 48px Manrope, Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(label, 360, 90);
-  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-  const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(23, 6), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, toneMapped:false }));
-  labelMesh.rotation.x = -Math.PI/2;
-  labelMesh.position.set(0, 5.25, 0);
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const labelMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(23, 6),
+    new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    })
+  );
+  labelMesh.rotation.x = -Math.PI / 2;
+  labelMesh.position.set(0, 5.24, 0);
   g.add(labelMesh);
 
-  g.position.set(x, BASE_H/2 + 11.3, -1.5);
-  root.add(g);
+  // Recess the vial into the insert. Only a controlled crown sits above the paper.
+  const vialCentreY = INSERT_TOP_Y - 2.55;
+  g.position.set(x, vialCentreY, -1.5);
+  baseGroup.add(g);
   return g;
 }
 
-const vialNames = ['SOTTO VOCE','LOW FEVER','LACUNA','PALE HUM'];
+const vialNames = ['SOTTO VOCE', 'LOW FEVER', 'LACUNA', 'PALE HUM'];
 let vials = [];
 
 function setSpacing(spacing) {
-  while (slotGroup.children.length) slotGroup.remove(slotGroup.children[0]);
-  vials.forEach(v => root.remove(v));
+  while (slotGroup.children.length) {
+    slotGroup.remove(slotGroup.children[0]);
+  }
+  vials.forEach(v => baseGroup.remove(v));
   vials = [];
-  const xs = [-1.5,-0.5,0.5,1.5].map(n => n*spacing);
+
+  const xs = [-1.5, -0.5, 0.5, 1.5].map(n => n * spacing);
   xs.forEach(addSlot);
-  xs.forEach((x,i) => vials.push(makeVial(x, vialNames[i])));
+  xs.forEach((x, i) => vials.push(makeVial(x, vialNames[i])));
 }
 setSpacing(37);
 
-// Hinged cover, entirely linen paper.
-const hinge = new THREE.Group();
-hinge.position.set(0, BASE_H/2, -D/2 + 4);
-root.add(hinge);
+// ─── LID — completely separate telescoping object, NO hinge ──────────────────
+const lidGroup = new THREE.Group();
+root.add(lidGroup);
 
-const cover = roundedBox(W, COVER_T, D, 2.2, linenMat);
-cover.position.set(0, COVER_T/2 + 1.2, D/2 - 4);
-hinge.add(cover);
+// Linen top panel.
+const lidTop = roundedBox(LID_W, LID_TOP, LID_D, 2.1, linenMat);
+lidTop.position.y = LID_H - LID_TOP / 2;
+lidGroup.add(lidTop);
 
-// Mineral Graphite centre field / plaque — same exact family as 50 ml box.
-const plaque = roundedBox(104, 2.4, 58, 1.2, mineralMat);
-plaque.position.set(0, COVER_T/2 + 4.15, D/2 - 4);
-hinge.add(plaque);
+// Four linen skirts. The interior opening is slightly larger than the base,
+// so at CLOSED the lid visibly comes DOWN over the base instead of sitting on top.
+const skirtH = LID_H - LID_TOP;
+const skirtY = skirtH / 2;
 
-const plaqueCopy = new THREE.Mesh(
-  new THREE.PlaneGeometry(88, 38),
-  new THREE.MeshBasicMaterial({ map: textTexture(['TWYNE','VOLUME I — KENOPSIA']), transparent:true, toneMapped:false })
+const frontSkirt = roundedBox(LID_W, skirtH, LID_WALL, 0.9, linenMat);
+frontSkirt.position.set(0, skirtY, LID_D / 2 - LID_WALL / 2);
+lidGroup.add(frontSkirt);
+
+const backSkirt = frontSkirt.clone();
+backSkirt.position.z = -LID_D / 2 + LID_WALL / 2;
+lidGroup.add(backSkirt);
+
+const sideDepth = LID_D - LID_WALL * 2;
+const leftSkirt = roundedBox(LID_WALL, skirtH, sideDepth, 0.9, linenMat);
+leftSkirt.position.set(-LID_W / 2 + LID_WALL / 2, skirtY, 0);
+lidGroup.add(leftSkirt);
+
+const rightSkirt = leftSkirt.clone();
+rightSkirt.position.x = LID_W / 2 - LID_WALL / 2;
+lidGroup.add(rightSkirt);
+
+// Mineral Graphite centre plaque only — the rest remains linen paper.
+const plaque = roundedBox(104, 2.4, 58, 1.1, mineralMat);
+plaque.position.set(0, LID_H + 1.18, 0);
+lidGroup.add(plaque);
+
+// Exact user-supplied TWYNE wordmark, traced as geometry-safe SVG asset.
+const logoTex = new THREE.TextureLoader().load('../assets/twyne-wordmark-2026.svg');
+logoTex.colorSpace = THREE.SRGBColorSpace;
+const logoMat = new THREE.MeshBasicMaterial({
+  map: logoTex,
+  transparent: true,
+  toneMapped: false,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+});
+
+const logo = new THREE.Mesh(new THREE.PlaneGeometry(82, 20.5), logoMat);
+logo.rotation.x = -Math.PI / 2;
+logo.position.set(0, LID_H + 2.43, -7.5);
+logo.renderOrder = 20;
+lidGroup.add(logo);
+
+const volumeCopy = new THREE.Mesh(
+  new THREE.PlaneGeometry(78, 9),
+  new THREE.MeshBasicMaterial({
+    map: smallTextTexture('VOLUME I — KENOPSIA'),
+    transparent: true,
+    toneMapped: false,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  })
 );
-plaqueCopy.rotation.x = -Math.PI/2;
-plaqueCopy.position.set(0, COVER_T/2 + 5.42, D/2 - 4);
-hinge.add(plaqueCopy);
+volumeCopy.rotation.x = -Math.PI / 2;
+volumeCopy.position.set(0, LID_H + 2.44, 15.5);
+volumeCopy.renderOrder = 21;
+lidGroup.add(volumeCopy);
 
 let openAmount = 0.86;
+
 function applyOpen(v) {
   openAmount = v;
-  hinge.rotation.x = -THREE.MathUtils.degToRad(112) * v;
+
+  // Closed: lid bottom = -1 mm, so it telescopes over the upper half of the base.
+  // Open: lid lifts clear and moves backward as a separate physical piece.
+  lidGroup.position.y = LID_CLOSED_BOTTOM + 64 * v;
+  lidGroup.position.z = -58 * v;
+  lidGroup.rotation.set(0, 0, 0);
 }
 applyOpen(openAmount);
 
@@ -272,19 +387,23 @@ ctrlSpacing.addEventListener('input', e => {
   readout.textContent = `${v} mm centre spacing`;
 });
 
-function animateCamera(pos, target = new THREE.Vector3(0,18,0)) {
+function animateCamera(pos, target = new THREE.Vector3(0, 18, 0)) {
   camera.position.set(...pos);
   controls.target.copy(target);
   controls.update();
 }
 
-document.getElementById('cam-3q').onclick = () => animateCamera([245,180,255]);
-document.getElementById('cam-top').onclick = () => animateCamera([0,390,6]);
-document.getElementById('cam-front').onclick = () => animateCamera([0,120,310]);
-document.getElementById('cam-closed').onclick = () => { applyOpen(0); ctrlOpen.value = 0; animateCamera([220,125,240], new THREE.Vector3(0,2,0)); };
+document.getElementById('cam-3q').onclick = () => animateCamera([245, 180, 255]);
+document.getElementById('cam-top').onclick = () => animateCamera([0, 390, 6]);
+document.getElementById('cam-front').onclick = () => animateCamera([0, 120, 310]);
+document.getElementById('cam-closed').onclick = () => {
+  applyOpen(0);
+  ctrlOpen.value = 0;
+  animateCamera([220, 125, 240], new THREE.Vector3(0, 6, 0));
+};
 
 document.getElementById('btn-render').onclick = () => {
-  renderer.render(scene,camera);
+  renderer.render(scene, camera);
   const a = document.createElement('a');
   a.download = 'TWYNE-GIFT-SET.png';
   a.href = renderer.domElement.toDataURL('image/png');
@@ -297,9 +416,10 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-function tick(){
+function tick() {
   requestAnimationFrame(tick);
   controls.update();
-  renderer.render(scene,camera);
+  renderer.render(scene, camera);
 }
+
 tick();
