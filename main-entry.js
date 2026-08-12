@@ -21,8 +21,6 @@ if (canvasFontDescriptor?.set && canvasFontDescriptor?.get) {
 }
 
 // Wibalin Finelinen-inspired wrap simulation for the Mineral Graphite material.
-// The live prototype keeps the same graphite colour but adds a very fine woven
-// micro-linen structure: visible in raking light, quiet from a distance.
 const originalPutImageData = CanvasRenderingContext2D.prototype.putImageData;
 CanvasRenderingContext2D.prototype.putImageData = function(imageData, ...args) {
   const result = originalPutImageData.call(this, imageData, ...args);
@@ -222,24 +220,29 @@ function addFilmFrame(lidGroup, lidSize) {
   lidGroup.add(meta);
 }
 
-// Raised presentation tray above the thin base, inspired by the stepped Sora Dora
-// presentation structure but simplified for TWYNE. It is a low square frame rather
-// than a tall wall, leaving a fitted 54 mm central well for the 49 x 49 mm bottle.
+// Taller, tighter presentation collar above the thin base.
+// The opening follows the actual 49.07 x 49.60 mm bottle footprint with only
+// ~0.6 mm clearance per side, so the bottle reads as fitted rather than loose.
 function addRaisedBaseTray(parent, baseMesh, baseSize) {
-  const outer = 68;
-  const inner = 54;
-  const trayH = 5.5;
-  const rail = (outer - inner) / 2;
+  const outerW = 70;
+  const outerD = 70;
+  const innerW = 50.27; // 49.07 bottle width + 1.20 mm total clearance
+  const innerD = 50.80; // 49.60 bottle depth + 1.20 mm total clearance
+  const trayH = 7.5;
+
+  const railX = (outerW - innerW) / 2;
+  const railZ = (outerD - innerD) / 2;
   const baseTopY = baseMesh.position.y + baseSize.y / 2;
   const trayY = baseTopY + trayH / 2;
-  const offset = inner / 2 + rail / 2;
+  const xOffset = innerW / 2 + railX / 2;
+  const zOffset = innerD / 2 + railZ / 2;
   const material = baseMesh.material;
 
   const parts = [
-    { g: new THREE.BoxGeometry(outer, trayH, rail), p: [0, trayY, offset] },
-    { g: new THREE.BoxGeometry(outer, trayH, rail), p: [0, trayY, -offset] },
-    { g: new THREE.BoxGeometry(rail, trayH, inner), p: [offset, trayY, 0] },
-    { g: new THREE.BoxGeometry(rail, trayH, inner), p: [-offset, trayY, 0] },
+    { g: new THREE.BoxGeometry(outerW, trayH, railZ), p: [0, trayY, zOffset] },
+    { g: new THREE.BoxGeometry(outerW, trayH, railZ), p: [0, trayY, -zOffset] },
+    { g: new THREE.BoxGeometry(railX, trayH, innerD), p: [xOffset, trayY, 0] },
+    { g: new THREE.BoxGeometry(railX, trayH, innerD), p: [-xOffset, trayY, 0] },
   ];
 
   for (const part of parts) {
@@ -267,8 +270,6 @@ THREE.Group.prototype.add = function(...objects) {
     const size = new THREE.Vector3();
     bb.getSize(size);
 
-    // The thin outer base is ~90 x 16 x 90 mm. Add a separate low inner tray
-    // directly above it once per rebuilt root group.
     const isOuterBase =
       size.x > 84 && size.z > 84 &&
       size.y > 8 && size.y < 30;
