@@ -15,15 +15,20 @@ const nativeGroupAdd = THREE.Group.prototype.add;
 
 function makeExactWordmarkDebossMaterial(depth = 1) {
   const cv = document.createElement('canvas');
-  cv.width = 1536;
-  cv.height = 256;
+
+  // IMPORTANT: keep the texture canvas at the SAME aspect ratio as the visible
+  // artwork / plane (~11.45:1). The previous 1536x256 canvas was ~6:1, so when
+  // mapped onto the very wide top plane it visually squashed the logo vertically.
+  cv.width = 2048;
+  cv.height = 180;
+
   const ctx = cv.getContext('2d');
   ctx.clearRect(0, 0, cv.width, cv.height);
 
   const paths = EXACT_TWYNE_PATHS.map(d => new Path2D(d));
   const sourceW = 1867;
   const sourceH = 163;
-  const targetW = 1340;
+  const targetW = 1840;
   const scale = targetW / sourceW;
   const markH = sourceH * scale;
   const ox = (cv.width - targetW) / 2;
@@ -59,9 +64,12 @@ function makeExactWordmarkDebossMaterial(depth = 1) {
 }
 
 function addExactTopLogo(parent, oldMesh) {
-  // Preserve the supplied artwork's very wide, low aspect ratio.
+  // Preserve the supplied artwork's real visible ratio: 1867 / 163 ≈ 11.45.
+  const logoW = 72;
+  const logoH = logoW * (163 / 1867);
+
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(72, 6.3),
+    new THREE.PlaneGeometry(logoW, logoH),
     makeExactWordmarkDebossMaterial(1.0)
   );
   mesh.position.copy(oldMesh.position);
