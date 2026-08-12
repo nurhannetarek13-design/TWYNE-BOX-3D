@@ -220,12 +220,12 @@ function addFilmFrame(lidGroup, lidSize) {
   lidGroup.add(meta);
 }
 
-// Taller, tighter presentation collar above the thin base.
-// The opening follows the actual 49.07 x 49.60 mm bottle footprint with only
-// ~0.6 mm clearance per side, so the bottle reads as fitted rather than loose.
+// Taller, tightly cropped presentation collar above the thin base.
+// The opening stays fitted to the bottle, while the outside edge now sits only
+// about 4 mm beyond the bottle footprint instead of the previous ~10 mm.
 function addRaisedBaseTray(parent, baseMesh, baseSize) {
-  const outerW = 70;
-  const outerD = 70;
+  const outerW = 57.0;
+  const outerD = 57.5;
   const innerW = 50.27; // 49.07 bottle width + 1.20 mm total clearance
   const innerD = 50.80; // 49.60 bottle depth + 1.20 mm total clearance
   const trayH = 7.5;
