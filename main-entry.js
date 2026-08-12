@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
-// Load a visibly different, fashion-editorial grotesk for all supporting copy.
-// The custom TWYNE wordmark remains untouched.
+// TWYNE typography rule: sans-serif only across the entire house system.
+// Inter Tight is the supporting face; Space Grotesk is reserved for volume titles.
 const supportingFontLink = document.createElement('link');
 supportingFontLink.rel = 'stylesheet';
-supportingFontLink.href = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&display=swap';
+supportingFontLink.href = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap';
 document.head.appendChild(supportingFontLink);
 
 const canvasFontDescriptor = Object.getOwnPropertyDescriptor(
@@ -18,8 +18,16 @@ if (canvasFontDescriptor?.set && canvasFontDescriptor?.get) {
     enumerable: canvasFontDescriptor.enumerable,
     get() { return canvasFontDescriptor.get.call(this); },
     set(value) {
-      const next = String(value)
+      let next = String(value)
+        // Main supporting copy: remove all serif families from the visible system.
         .replace(/\"Bodoni Moda\",\s*Didot,\s*\"Times New Roman\",\s*serif/g, '\"Inter Tight\", \"Helvetica Neue\", Helvetica, Arial, sans-serif')
+        // Volume title: keep a distinct display voice, but still strictly sans-serif.
+        .replace(/\"Cormorant Garamond\",\s*Georgia,\s*serif/g, '\"Space Grotesk\", \"Inter Tight\", \"Helvetica Neue\", Helvetica, Arial, sans-serif')
+        // Safety net: no visible fallback may resolve to a serif face.
+        .replace(/\bDidot\b/g, 'Helvetica')
+        .replace(/\"Times New Roman\"/g, 'Arial')
+        .replace(/\bGeorgia\b/g, 'Arial')
+        .replace(/,\s*serif\b/g, ', sans-serif')
         .replace(/^500\s+/, '400 ');
       canvasFontDescriptor.set.call(this, next);
     },
@@ -96,8 +104,7 @@ THREE.Vector3.prototype.set = function(x, y, z) {
   return originalVectorSet.call(this, x, y, z);
 };
 
-// Main-v2 already supplies tracking values, but the previous spacing was too tight.
-// Increase every supporting line enough to be visibly editorial while preserving the logo.
+// Main-v2 supplies tracking values; widen them for an editorial house feel.
 const originalFillText = CanvasRenderingContext2D.prototype.fillText;
 CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
   const replacements = {
@@ -279,7 +286,6 @@ function addRaisedBaseTray(parent, baseMesh, baseSize) {
 
 // Lower the bottle independently of the protective rim. The rim is only a guard
 // at the base perimeter; it never supports, grips, or determines bottle position.
-// The bottle body + cap are moved down together by 4.5 mm to increase the sink.
 function lowerBottleIndependentOfRim(obj, size) {
   if (!obj?.isMesh || obj.userData?.isRaisedBaseTray) return;
 
@@ -343,6 +349,7 @@ THREE.Group.prototype.add = function(...objects) {
 
 await document.fonts?.load?.('400 90px "Inter Tight"');
 await document.fonts?.load?.('500 90px "Inter Tight"');
+await document.fonts?.load?.('400 120px "Space Grotesk"');
 await document.fonts?.ready;
 await import('./main-v2.js');
 
