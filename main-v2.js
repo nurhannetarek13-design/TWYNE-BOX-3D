@@ -148,6 +148,13 @@ const sectionPlane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
 // Editorial supporting face. TWYNE itself always uses the custom wordmark paths below.
 const SUPPORT_FONT = '"Bodoni Moda", Didot, "Times New Roman", serif';
 
+// Volume titles get a separate cinematic/editorial voice from the house system.
+const VOLUME_DISPLAY_FONT = '"Cormorant Garamond", Georgia, serif';
+const volumeDisplayFontLink = document.createElement('link');
+volumeDisplayFontLink.rel = 'stylesheet';
+volumeDisplayFontLink.href = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&display=swap';
+document.head.appendChild(volumeDisplayFontLink);
+
 function makeDebossTextMaterial(lines, {
   width = 1600,
   height = 360,
@@ -392,8 +399,10 @@ function buildBox() {
     x: 0,
     y: lidBlockH / 2 - 4.6,
     z: D / 2 + S + 0.002,
-    fontSize: 114,
-    tracking: 6,
+    fontFamily: VOLUME_DISPLAY_FONT,
+    fontWeight: '400',
+    fontSize: 120,
+    tracking: 3,
     depth: 0.92,
   });
 
@@ -592,10 +601,10 @@ window.addEventListener('resize', () => {
   renderer.render(scene, camera);
 })();
 
-// Build only after Bodoni has had a chance to load; fallback remains visible if it does not.
+// Build after the volume display face is ready; fallbacks remain available.
 if (document.fonts?.load) {
   Promise.all([
-    document.fonts.load('500 90px "Bodoni Moda"'),
+    document.fonts.load('400 120px "Cormorant Garamond"'),
     document.fonts.ready,
   ]).finally(buildBox);
 } else {
