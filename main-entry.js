@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
-// Supporting copy: clean modern sans. TWYNE wordmark remains custom in main-v2.js.
+// Supporting copy: quiet neo-grotesk system to sit behind the custom TWYNE wordmark.
+// Helvetica Neue is preferred; Arial Nova / Helvetica / Arial are fallbacks.
 const canvasFontDescriptor = Object.getOwnPropertyDescriptor(
   CanvasRenderingContext2D.prototype,
   'font'
@@ -13,8 +14,8 @@ if (canvasFontDescriptor?.set && canvasFontDescriptor?.get) {
     get() { return canvasFontDescriptor.get.call(this); },
     set(value) {
       const next = String(value)
-        .replace(/\"Bodoni Moda\",\s*Didot,\s*\"Times New Roman\",\s*serif/g, '\"Manrope\", \"Helvetica Neue\", Arial, sans-serif')
-        .replace(/^500\s+/, '600 ');
+        .replace(/\"Bodoni Moda\",\s*Didot,\s*\"Times New Roman\",\s*serif/g, '\"Helvetica Neue\", \"Arial Nova\", Helvetica, Arial, sans-serif')
+        .replace(/^500\s+/, '400 ');
       canvasFontDescriptor.set.call(this, next);
     },
   });
@@ -115,7 +116,7 @@ function makeMicroTextMaterial(lines) {
 
   lines.forEach((line, i) => {
     const y = y0 + i * lineH;
-    ctx.font = `${i === 0 ? 600 : 500} ${i === 0 ? 60 : 48}px \"Manrope\", \"Helvetica Neue\", Arial, sans-serif`;
+    ctx.font = `${i === 0 ? 500 : 400} ${i === 0 ? 60 : 48}px \"Helvetica Neue\", \"Arial Nova\", Helvetica, Arial, sans-serif`;
     ctx.fillStyle = i === 0 ? 'rgba(7,7,6,0.68)' : 'rgba(7,7,6,0.48)';
     ctx.fillText(line, cv.width / 2, y);
   });
@@ -318,7 +319,6 @@ THREE.Group.prototype.add = function(...objects) {
   return result;
 };
 
-await document.fonts?.load?.('600 90px \"Manrope\"');
 await document.fonts?.ready;
 await import('./main-v2.js');
 
