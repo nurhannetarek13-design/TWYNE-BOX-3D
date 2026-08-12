@@ -20,6 +20,71 @@ if (canvasFontDescriptor?.set && canvasFontDescriptor?.get) {
   });
 }
 
+// Wibalin Finelinen-inspired wrap simulation for the Mineral Graphite material.
+// The live prototype keeps the same graphite colour but adds a very fine woven
+// micro-linen structure: visible in raking light, quiet from a distance.
+const originalPutImageData = CanvasRenderingContext2D.prototype.putImageData;
+CanvasRenderingContext2D.prototype.putImageData = function(imageData, ...args) {
+  const result = originalPutImageData.call(this, imageData, ...args);
+
+  if (imageData?.width === 1024 && imageData?.height === 1024 && imageData?.data?.length) {
+    const d = imageData.data;
+    const sampleIndexes = [0, 1024 * 512 * 4, (1024 * 1024 - 1) * 4];
+    let r = 0, g = 0, b = 0;
+    sampleIndexes.forEach(i => {
+      r += d[i] || 0;
+      g += d[i + 1] || 0;
+      b += d[i + 2] || 0;
+    });
+    r /= sampleIndexes.length;
+    g /= sampleIndexes.length;
+    b /= sampleIndexes.length;
+
+    const isMineralGraphite = r > 64 && r < 92 && g > 64 && g < 92 && b > 60 && b < 90;
+    if (isMineralGraphite) {
+      const ctx = this;
+      const w = imageData.width;
+      const h = imageData.height;
+      ctx.save();
+      ctx.lineWidth = 1;
+
+      // Fine vertical warp — slightly stronger, like a tight luxury linen wrap.
+      for (let x = 1.5; x < w; x += 5) {
+        ctx.strokeStyle = 'rgba(238,238,232,0.038)';
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(5,5,4,0.052)';
+        ctx.beginPath();
+        ctx.moveTo(x + 1.6, 0);
+        ctx.lineTo(x + 1.6, h);
+        ctx.stroke();
+      }
+
+      // Finer horizontal weft — lower contrast so it never reads as a grid.
+      for (let y = 2.5; y < h; y += 6) {
+        ctx.strokeStyle = 'rgba(238,238,232,0.026)';
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(5,5,4,0.036)';
+        ctx.beginPath();
+        ctx.moveTo(0, y + 1.4);
+        ctx.lineTo(w, y + 1.4);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+  }
+
+  return result;
+};
+
 const originalVectorSet = THREE.Vector3.prototype.set;
 let prototypeCameraPosition = null;
 THREE.Vector3.prototype.set = function(x, y, z) {
@@ -71,10 +136,43 @@ function makeMicroTextMaterial(lines) {
   });
 }
 
+function makeFilmInsetFrameMaterial() {
+  const cv = document.createElement('canvas');
+  cv.width = 1200;
+  cv.height = 900;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  // Same-substrate blind inset: one tiny light lip + one deeper inner wall.
+  const m = 24;
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = 'rgba(244,244,238,0.085)';
+  ctx.strokeRect(m - 4, m - 4, cv.width - (m - 4) * 2, cv.height - (m - 4) * 2);
+
+  ctx.lineWidth = 9;
+  ctx.strokeStyle = 'rgba(0,0,0,0.34)';
+  ctx.strokeRect(m + 5, m + 5, cv.width - (m + 5) * 2, cv.height - (m + 5) * 2);
+
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(8,8,7,0.26)';
+  ctx.strokeRect(m + 1, m + 1, cv.width - (m + 1) * 2, cv.height - (m + 1) * 2);
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
+
 function addFilmFrame(lidGroup, lidSize) {
   const loader = new THREE.TextureLoader();
   const texture = loader.load(
-    './assets/kenopsia-film-frame-v2.jpg?v=3',
+    './assets/kenopsia-film-frame-v2.jpg?v=4',
     () => {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
@@ -92,8 +190,20 @@ function addFilmFrame(lidGroup, lidSize) {
     side: THREE.DoubleSide,
   });
 
+  // Subtle pressed frame around the campaign still. No printed border, no contrast colour.
+  const insetFrame = new THREE.Mesh(
+    new THREE.PlaneGeometry(78.5, 60),
+    makeFilmInsetFrameMaterial()
+  );
+  insetFrame.position.set(0, 44.8, -lidSize.z / 2 - 0.275);
+  insetFrame.rotation.y = Math.PI;
+  insetFrame.renderOrder = 41;
+  insetFrame.userData.isLabel = true;
+  insetFrame.userData.isFilmInsetFrame = true;
+  lidGroup.add(insetFrame);
+
   const image = new THREE.Mesh(new THREE.PlaneGeometry(74, 55.5), imageMat);
-  image.position.set(0, 44.8, -lidSize.z / 2 - 0.26);
+  image.position.set(0, 44.8, -lidSize.z / 2 - 0.28);
   image.rotation.y = Math.PI;
   image.renderOrder = 40;
   image.userData.isLabel = true;
@@ -108,7 +218,7 @@ function addFilmFrame(lidGroup, lidSize) {
       'TWYNEHAUS.COM',
     ])
   );
-  meta.position.set(0, 9.5, -lidSize.z / 2 - 0.27);
+  meta.position.set(0, 9.5, -lidSize.z / 2 - 0.29);
   meta.rotation.y = Math.PI;
   meta.renderOrder = 42;
   meta.userData.isLabel = true;
