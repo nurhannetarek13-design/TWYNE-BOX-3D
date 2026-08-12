@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // Replace the previous traced top wordmark with the exact silhouette supplied by the user.
 // Keep it tonal so it still reads as blind deboss on the graphite wrap.
 const nativeGroupAdd = THREE.Group.prototype.add;
-const logoTexture = new THREE.TextureLoader().load('./assets/twyne-wordmark-user.svg?v=1');
+const logoTexture = new THREE.TextureLoader().load('./assets/twyne-wordmark-user.svg?v=2');
 logoTexture.colorSpace = THREE.SRGBColorSpace;
 logoTexture.anisotropy = 8;
 
@@ -18,6 +18,7 @@ function addSuppliedLogo(parent, oldMesh) {
     toneMapped: false,
   });
 
+  // Supplied wordmark aspect ratio is intentionally much taller than the previous mark.
   const geometry = new THREE.PlaneGeometry(62, 23.3);
 
   const layers = [
@@ -48,13 +49,16 @@ THREE.Group.prototype.add = function(...objects) {
     const p = obj.geometry.parameters;
     if (!p) continue;
 
-    // Existing top TWYNE plane in main-v2.js: 69 × 6.75 mm, horizontal on the lid.
-    const isOldTopWordmark =
-      Math.abs((p.width ?? 0) - 69) < 0.6 &&
-      Math.abs((p.height ?? 0) - 6.75) < 0.6 &&
+    // Live top TWYNE plane in main-v2.js is ~70 × 6.85 mm.
+    // Use a small range so future micro-adjustments do not break the replacement.
+    const w = p.width ?? 0;
+    const h = p.height ?? 0;
+    const isTopWordmark =
+      w >= 68 && w <= 72 &&
+      h >= 6 && h <= 8 &&
       Math.abs(obj.rotation.x + Math.PI / 2) < 0.08;
 
-    if (!isOldTopWordmark) continue;
+    if (!isTopWordmark) continue;
 
     obj.visible = false;
     addSuppliedLogo(this, obj);
