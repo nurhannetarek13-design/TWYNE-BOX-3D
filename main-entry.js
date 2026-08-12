@@ -222,11 +222,41 @@ function addFilmFrame(lidGroup, lidSize) {
   lidGroup.add(meta);
 }
 
+// Raised presentation tray above the thin base, inspired by the stepped Sora Dora
+// presentation structure but simplified for TWYNE. It is a low square frame rather
+// than a tall wall, leaving a fitted 54 mm central well for the 49 x 49 mm bottle.
+function addRaisedBaseTray(parent, baseMesh, baseSize) {
+  const outer = 68;
+  const inner = 54;
+  const trayH = 5.5;
+  const rail = (outer - inner) / 2;
+  const baseTopY = baseMesh.position.y + baseSize.y / 2;
+  const trayY = baseTopY + trayH / 2;
+  const offset = inner / 2 + rail / 2;
+  const material = baseMesh.material;
+
+  const parts = [
+    { g: new THREE.BoxGeometry(outer, trayH, rail), p: [0, trayY, offset] },
+    { g: new THREE.BoxGeometry(outer, trayH, rail), p: [0, trayY, -offset] },
+    { g: new THREE.BoxGeometry(rail, trayH, inner), p: [offset, trayY, 0] },
+    { g: new THREE.BoxGeometry(rail, trayH, inner), p: [-offset, trayY, 0] },
+  ];
+
+  for (const part of parts) {
+    const mesh = new THREE.Mesh(part.g, material);
+    mesh.position.set(...part.p);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.isRaisedBaseTray = true;
+    originalGroupAdd.call(parent, mesh);
+  }
+}
+
 const originalGroupAdd = THREE.Group.prototype.add;
 let injectingFilmBack = false;
+let injectingRaisedTray = false;
 THREE.Group.prototype.add = function(...objects) {
   const result = originalGroupAdd.apply(this, objects);
-  if (injectingFilmBack || this.userData.filmBackInjected) return result;
 
   for (const obj of objects) {
     if (!obj?.isMesh || !obj.geometry) continue;
@@ -237,12 +267,27 @@ THREE.Group.prototype.add = function(...objects) {
     const size = new THREE.Vector3();
     bb.getSize(size);
 
-    if (size.x > 84 && size.z > 84 && size.y > 60 && size.y < 100) {
+    // The thin outer base is ~90 x 16 x 90 mm. Add a separate low inner tray
+    // directly above it once per rebuilt root group.
+    const isOuterBase =
+      size.x > 84 && size.z > 84 &&
+      size.y > 8 && size.y < 30;
+
+    if (isOuterBase && !injectingRaisedTray && !this.userData.raisedBaseTrayInjected) {
+      this.userData.raisedBaseTrayInjected = true;
+      injectingRaisedTray = true;
+      addRaisedBaseTray(this, obj, size);
+      injectingRaisedTray = false;
+    }
+
+    if (
+      size.x > 84 && size.z > 84 && size.y > 60 && size.y < 100 &&
+      !injectingFilmBack && !this.userData.filmBackInjected
+    ) {
       this.userData.filmBackInjected = true;
       injectingFilmBack = true;
       addFilmFrame(this, size);
       injectingFilmBack = false;
-      break;
     }
   }
 
