@@ -220,29 +220,30 @@ function addFilmFrame(lidGroup, lidSize) {
   lidGroup.add(meta);
 }
 
-// Taller, tightly cropped presentation collar above the thin base.
-// The opening stays fitted to the bottle, while the outside edge now sits only
-// about 4 mm beyond the bottle footprint instead of the previous ~10 mm.
+// Sora Dora-style protective rim: the raised part sits near the OUTER EDGE of the
+// base, not around the bottle. The wide central area stays open. This low perimeter
+// wall protects the upright bottle from sliding/falling when the deep lid is lifted.
 function addRaisedBaseTray(parent, baseMesh, baseSize) {
-  const outerW = 57.0;
-  const outerD = 57.5;
-  const innerW = 50.27; // 49.07 bottle width + 1.20 mm total clearance
-  const innerD = 50.80; // 49.60 bottle depth + 1.20 mm total clearance
-  const trayH = 7.5;
+  const rimOuterW = 84;
+  const rimOuterD = 84;
+  const wall = 3.4;
+  const rimH = 9.5;
 
-  const railX = (outerW - innerW) / 2;
-  const railZ = (outerD - innerD) / 2;
+  const rimInnerW = rimOuterW - wall * 2;
+  const rimInnerD = rimOuterD - wall * 2;
   const baseTopY = baseMesh.position.y + baseSize.y / 2;
-  const trayY = baseTopY + trayH / 2;
-  const xOffset = innerW / 2 + railX / 2;
-  const zOffset = innerD / 2 + railZ / 2;
+  const rimY = baseTopY + rimH / 2;
+  const xOffset = rimInnerW / 2 + wall / 2;
+  const zOffset = rimInnerD / 2 + wall / 2;
   const material = baseMesh.material;
 
   const parts = [
-    { g: new THREE.BoxGeometry(outerW, trayH, railZ), p: [0, trayY, zOffset] },
-    { g: new THREE.BoxGeometry(outerW, trayH, railZ), p: [0, trayY, -zOffset] },
-    { g: new THREE.BoxGeometry(railX, trayH, innerD), p: [xOffset, trayY, 0] },
-    { g: new THREE.BoxGeometry(railX, trayH, innerD), p: [-xOffset, trayY, 0] },
+    // Front and back protective lips sit almost on the base perimeter.
+    { g: new THREE.BoxGeometry(rimOuterW, rimH, wall), p: [0, rimY, zOffset] },
+    { g: new THREE.BoxGeometry(rimOuterW, rimH, wall), p: [0, rimY, -zOffset] },
+    // Side lips close the perimeter while leaving a large open field around bottle.
+    { g: new THREE.BoxGeometry(wall, rimH, rimInnerD), p: [xOffset, rimY, 0] },
+    { g: new THREE.BoxGeometry(wall, rimH, rimInnerD), p: [-xOffset, rimY, 0] },
   ];
 
   for (const part of parts) {
