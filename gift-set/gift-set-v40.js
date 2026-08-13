@@ -1,0 +1,27 @@
+import * as THREE from 'three';
+const ADD = THREE.Group.prototype.add;
+const refs = { main: null, group: null };
+function sizeOf(o){ if(!o?.geometry) return null; o.geometry.computeBoundingBox?.(); const bb=o.geometry.boundingBox; if(!bb) return null; const s=new THREE.Vector3(); bb.getSize(s); return s; }
+THREE.Group.prototype.add=function(...objects){
+  for(const o of objects){
+    if(!o?.isMesh) continue;
+    const s=sizeOf(o); if(!s) continue;
+    if(Math.abs(s.x-106)<0.6 && Math.abs(s.y-6.9)<0.6 && Math.abs(s.z)<0.1){ refs.main=o; refs.group=this; }
+  }
+  return ADD.apply(this,objects);
+};
+await import('./gift-set-v39.js?build=40');
+THREE.Group.prototype.add=ADD;
+if(refs.main && refs.group){
+  refs.main.visible=false;
+  const c=document.createElement('canvas'); c.width=2800; c.height=420;
+  const x=c.getContext('2d'); x.clearRect(0,0,c.width,c.height); x.fillStyle='#11110f'; x.textBaseline='middle'; x.font='600 104px Manrope,Arial,sans-serif';
+  const text='VOLUME I - KENOPSIA'; const chars=[...text]; const widths=chars.map(ch=>x.measureText(ch).width);
+  const tracking=19;
+  const total=widths.reduce((a,b)=>a+b,0)+tracking*(chars.length-1);
+  let px=(c.width-total)/2;
+  chars.forEach((ch,i)=>{ x.fillText(ch,px,210); px+=widths[i]+tracking; });
+  const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace; tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter; tex.generateMipmaps=false; tex.needsUpdate=true;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(112,6.9),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
+  m.rotation.x=-Math.PI/2; m.position.copy(refs.main.position); m.position.y+=0.02; m.renderOrder=50030; refs.group.add(m);
+}
