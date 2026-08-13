@@ -406,6 +406,28 @@ function buildBox() {
     depth: 0.92,
   });
 
+  // FRONT — size sits on the lid just above the seam, not on the pedestal base.
+  addDebossLabel(lidGroup, ['50 ML / 1.7 FL. OZ.'], {
+    w: 42,
+    h: 5.4,
+    x: 0,
+    y: 4.8,
+    z: D / 2 + S + 0.004,
+    fontSize: 58,
+    tracking: 4,
+    depth: 0.48,
+  });
+
+  // LOWER BASE — permanent house mark so the base can live on as a bottle pedestal.
+  addDebossWordmark(rootGroup, {
+    w: 48,
+    h: 4.7,
+    x: 0,
+    y: seamY / 2,
+    z: D / 2 + S + 0.002,
+    depth: 0.92,
+  });
+
   // BACK — intentionally blank.
 
   // LEFT — establishes the house.
@@ -456,18 +478,6 @@ function buildBox() {
     fontSize: 78,
     tracking: 6,
     depth: 0.48,
-  });
-
-  // THIN BASE — size only.
-  addDebossLabel(rootGroup, ['50 ML / 1.7 FL. OZ.'], {
-    w: 46,
-    h: 7.5,
-    x: 0,
-    y: seamY / 2,
-    z: D / 2 + S,
-    fontSize: 68,
-    tracking: 4,
-    depth: 0.58,
   });
 
   controls.target.set(0, H / 2, 0);
