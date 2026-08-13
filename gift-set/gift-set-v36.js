@@ -20,6 +20,7 @@ const sh=new THREE.Mesh(mergeGeometries(gs,false),m);sh.castShadow=sh.receiveSha
 if(r.tg&&r.tb){const m=r.tb.material.clone(),gs=[];let g;
 g=new THREE.BoxGeometry(190,5,2.4);g.translate(0,13,48.8);gs.push(g);g=new THREE.BoxGeometry(190,5,2.4);g.translate(0,13,-48.8);gs.push(g);g=new THREE.BoxGeometry(2.4,5,95.2);g.translate(-93.8,13,0);gs.push(g);g=new THREE.BoxGeometry(2.4,5,95.2);g.translate(93.8,13,0);gs.push(g);
 const lip=new THREE.Mesh(mergeGeometries(gs,false),m);lip.castShadow=lip.receiveShadow=true;lip.name='TRAY_PERIMETER_LIP_V36';r.tg.add(lip);}
+if(r.logo){r.logo.scale.set(.88,.88,1);}
 if(r.logo?.material){r.logo.material.opacity=.7;r.logo.material.transparent=true;r.logo.material.needsUpdate=true;}
 if(r.v)r.v.visible=false;if(r.k)r.k.visible=false;if(r.e)r.e.visible=false;
 function tx(t,w,h,z,fs){const c=document.createElement('canvas');c.width=2200;c.height=360;const x=c.getContext('2d');x.fillStyle='#11110f';x.textBaseline='middle';x.font=`600 ${fs}px Manrope,Arial,sans-serif`;x.textAlign='center';x.fillText(t,1100,180);const q=new THREE.CanvasTexture(c);q.colorSpace=THREE.SRGBColorSpace;q.needsUpdate=true;const o=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:q,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));o.rotation.x=-Math.PI/2;o.position.set(0,20.97,z);r.sg?.add(o);}
