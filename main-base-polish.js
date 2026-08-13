@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 // Pedestal-only polish layer.
-// Keeps the approved TWYNE letterforms, gives the base wordmark a little more air,
-// compresses its height slightly, and optically centres it on the 16 mm pedestal.
+// Keeps the approved TWYNE letterforms, gives the base wordmark a clearly wider
+// luxury spacing, preserves the compressed height, and optically centres it.
 const EXACT_TWYNE_PATHS = [
   'M3 1L1 3L1 38L3 40L70 40L72 43L72 158L118 159L120 157L120 42L122 40L191 39L192 3L189 1Z',
   'M368 3L422 159L486 159L516 67L522 54L526 59L537 90L558 158L623 159L676 5L676 2L674 1L630 1L628 3L594 110L590 115L587 112L550 2L497 2L494 6L457 113L454 115L451 111L416 2L370 1Z',
@@ -22,12 +22,12 @@ function makePolishedBaseMaterial(depth = 1.10) {
 
   const paths = EXACT_TWYNE_PATHS.map(d => new Path2D(d));
 
-  // Roughly 16 source-units of visible air between each letter pair.
-  // This is a clear step up from the previous 10-unit spacing, while still
-  // keeping the pedestal mark much tighter than the top wordmark.
-  const shifts = [0, 160, 316, 486, 668];
+  // Roughly 30 source-units of visible air between each letter pair.
+  // This is intentionally much more open than the previous 16-unit version,
+  // while keeping the five letters balanced as one house signature.
+  const shifts = [0, 146, 288, 444, 612];
   const visibleMinX = 1;
-  const visibleSourceW = 1195;
+  const visibleSourceW = 1251;
   const sourceH = 163;
   const targetW = 1840;
   const scale = targetW / visibleSourceW;
@@ -68,9 +68,11 @@ function makePolishedBaseMaterial(depth = 1.10) {
 }
 
 function polishBaseLogo(mesh) {
-  const logoW = 59;
-  const naturalH = logoW * (163 / 1195);
-  const logoH = naturalH * 0.84; // slightly compressed vertically for a cleaner pedestal signature
+  // Slightly wider overall so the added tracking reads as real space rather than
+  // simply shrinking the letters inside the same footprint.
+  const logoW = 63;
+  const naturalH = logoW * (163 / 1251);
+  const logoH = naturalH * 0.82;
 
   mesh.geometry?.dispose?.();
   mesh.geometry = new THREE.PlaneGeometry(logoW, logoH);
