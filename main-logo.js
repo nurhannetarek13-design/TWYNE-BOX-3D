@@ -124,8 +124,8 @@ function makeSizeCopyMaterial() {
   ctx.font = '400 72px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
   if ('letterSpacing' in ctx) ctx.letterSpacing = '9px';
 
-  // Flat tonal print. Softer than the previous version, but still legible.
-  ctx.fillStyle = 'rgba(226,223,215,0.52)';
+  // Match the restrained tonal hierarchy of the other box typography.
+  ctx.fillStyle = 'rgba(226,223,215,0.34)';
   nativeFillText.call(ctx, '50 ML / 1.7 FL. OZ.', cv.width / 2, cv.height / 2);
 
   const tex = new THREE.CanvasTexture(cv);
