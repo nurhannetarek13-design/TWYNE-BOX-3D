@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 
-// Latest TWYNE wordmark supplied by the user. The silhouette is traced directly
-// from the transparent PNG so the spacing and proportions stay faithful to the
-// approved artwork while remaining reliable inside the local Three.js prototype.
+// Latest TWYNE wordmark supplied by the user. The top keeps the approved spacing;
+// the pedestal/base uses the same letterforms with zero extra gap between them.
 const EXACT_TWYNE_PATHS = [
   'M3 1L1 3L1 38L3 40L70 40L72 43L72 158L118 159L120 157L120 42L122 40L191 39L192 3L189 1Z',
   'M368 3L422 159L486 159L516 67L522 54L526 59L537 90L558 158L623 159L676 5L676 2L674 1L630 1L628 3L594 110L590 115L587 112L550 2L497 2L494 6L457 113L454 115L451 111L416 2L370 1Z',
@@ -14,10 +13,8 @@ const EXACT_TWYNE_PATHS = [
 const nativeGroupAdd = THREE.Group.prototype.add;
 const nativeFillText = CanvasRenderingContext2D.prototype.fillText;
 
-function makeExactWordmarkDebossMaterial(depth = 1, letterShiftStep = 0) {
+function makeExactWordmarkDebossMaterial(depth = 1) {
   const cv = document.createElement('canvas');
-
-  // Keep the texture canvas at the same aspect ratio as the approved artwork.
   cv.width = 2048;
   cv.height = 180;
 
@@ -30,12 +27,57 @@ function makeExactWordmarkDebossMaterial(depth = 1, letterShiftStep = 0) {
   const targetW = 1840;
   const scale = targetW / sourceW;
   const markH = sourceH * scale;
+  const ox = (cv.width - targetW) / 2;
+  const oy = (cv.height - markH) / 2;
+  const edge = 2.8 * depth;
 
-  // For the pedestal logo only, pull each following letter slightly left.
-  // Letter silhouettes stay untouched; only the empty gaps are reduced.
-  const compactSourceW = sourceW - letterShiftStep * (paths.length - 1);
-  const compactTargetW = compactSourceW * scale;
-  const ox = (cv.width - compactTargetW) / 2;
+  function draw(dx, dy, fill) {
+    ctx.save();
+    ctx.translate(ox + dx, oy + dy);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = fill;
+    paths.forEach(p => ctx.fill(p));
+    ctx.restore();
+  }
+
+  draw(-edge, -edge, `rgba(230,230,224,${0.15 * depth})`);
+  draw(edge, edge, `rgba(0,0,0,${0.64 * depth})`);
+  draw(0, 0, `rgba(6,6,5,${0.54 * depth})`);
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+
+  return new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
+
+// Dedicated pedestal wordmark: the existing empty gaps are removed completely.
+// Each next letter begins exactly where the previous letter's visible bounds end.
+function makeTightBaseWordmarkDebossMaterial(depth = 1) {
+  const cv = document.createElement('canvas');
+  cv.width = 2048;
+  cv.height = 320;
+
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  const paths = EXACT_TWYNE_PATHS.map(d => new Path2D(d));
+  // Shifts derived from the actual visible bounds of T / W / Y / N / E.
+  // Result: zero tracking/gap, no overlap, no change to any letter silhouette.
+  const shifts = [0, 176, 348, 534, 732];
+  const compactMinX = 1;
+  const compactSourceW = 1131;
+  const sourceH = 163;
+  const targetW = 1840;
+  const scale = targetW / compactSourceW;
+  const markH = sourceH * scale;
+  const ox = (cv.width - targetW) / 2;
   const oy = (cv.height - markH) / 2;
   const edge = 2.8 * depth;
 
@@ -43,7 +85,7 @@ function makeExactWordmarkDebossMaterial(depth = 1, letterShiftStep = 0) {
     paths.forEach((p, i) => {
       ctx.save();
       ctx.translate(
-        ox + dx - i * letterShiftStep * scale,
+        ox + dx - (shifts[i] + compactMinX) * scale,
         oy + dy
       );
       ctx.scale(scale, scale);
@@ -53,8 +95,6 @@ function makeExactWordmarkDebossMaterial(depth = 1, letterShiftStep = 0) {
     });
   }
 
-  // Tonal blind-deboss simulation only: subtle light lip, darker inner wall,
-  // recessed centre. No printed ink, foil, or sticker appearance.
   draw(-edge, -edge, `rgba(230,230,224,${0.15 * depth})`);
   draw(edge, edge, `rgba(0,0,0,${0.64 * depth})`);
   draw(0, 0, `rgba(6,6,5,${0.54 * depth})`);
@@ -84,9 +124,8 @@ function makeSizeCopyMaterial() {
   ctx.font = '400 72px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
   if ('letterSpacing' in ctx) ctx.letterSpacing = '9px';
 
-  // Flat tonal print — deliberately clearer than the surrounding micro-copy,
-  // but still restrained against Mineral Graphite. No emboss/deboss simulation.
-  ctx.fillStyle = 'rgba(226,223,215,0.68)';
+  // Flat tonal print. Softer than the previous version, but still legible.
+  ctx.fillStyle = 'rgba(226,223,215,0.52)';
   nativeFillText.call(ctx, '50 ML / 1.7 FL. OZ.', cv.width / 2, cv.height / 2);
 
   const tex = new THREE.CanvasTexture(cv);
@@ -102,35 +141,40 @@ function makeSizeCopyMaterial() {
   });
 }
 
-function addExactWordmark(parent, oldMesh, logoW, depth, renderOrder, letterShiftStep = 0) {
+function addExactTopLogo(parent, oldMesh) {
+  const logoW = 72;
   const logoH = logoW * (163 / 1867);
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(logoW, logoH),
-    makeExactWordmarkDebossMaterial(depth, letterShiftStep)
+    makeExactWordmarkDebossMaterial(1.0)
   );
   mesh.position.copy(oldMesh.position);
+  mesh.position.y += 0.012;
   mesh.position.z += 0.012;
   mesh.rotation.copy(oldMesh.rotation);
-  mesh.renderOrder = renderOrder;
+  mesh.renderOrder = 38;
   mesh.userData.isLabel = true;
   mesh.userData.isExactTwyneLogo = true;
   nativeGroupAdd.call(parent, mesh);
-  return mesh;
-}
-
-function addExactTopLogo(parent, oldMesh) {
-  const mesh = addExactWordmark(parent, oldMesh, 72, 1.0, 38);
-  mesh.position.y += 0.012;
 }
 
 function addExactBaseLogo(parent, oldMesh) {
-  // Same letterforms as the approved logo, but the pedestal version has slightly
-  // tighter spacing so it reads as one compact house signature on the 16 mm base.
-  const mesh = addExactWordmark(parent, oldMesh, 59, 1.10, 39, 30);
+  const logoW = 59;
+  const logoH = logoW * (163 / 1131);
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(logoW, logoH),
+    makeTightBaseWordmarkDebossMaterial(1.10)
+  );
+  mesh.position.copy(oldMesh.position);
   mesh.position.x = 0;
-  mesh.position.y = 8.0; // true optical centre of the 16 mm visible base
-  mesh.position.z += 0.006;
+  mesh.position.y = 8.0;
+  mesh.position.z += 0.018;
+  mesh.rotation.copy(oldMesh.rotation);
+  mesh.renderOrder = 39;
+  mesh.userData.isLabel = true;
+  mesh.userData.isExactTwyneLogo = true;
   mesh.userData.isExactTwyneBaseLogo = true;
+  nativeGroupAdd.call(parent, mesh);
 }
 
 function addReadableSizeCopy(parent, oldMesh) {
@@ -140,7 +184,7 @@ function addReadableSizeCopy(parent, oldMesh) {
   );
   mesh.position.copy(oldMesh.position);
   mesh.position.x = 0;
-  mesh.position.y = 7.9; // gives ~5 mm breathing room above the seam
+  mesh.position.y = 7.9;
   mesh.position.z += 0.014;
   mesh.rotation.copy(oldMesh.rotation);
   mesh.renderOrder = 36;
