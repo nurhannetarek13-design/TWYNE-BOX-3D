@@ -12,13 +12,12 @@ const EXACT_TWYNE_PATHS = [
 ];
 
 const nativeGroupAdd = THREE.Group.prototype.add;
+const nativeFillText = CanvasRenderingContext2D.prototype.fillText;
 
 function makeExactWordmarkDebossMaterial(depth = 1) {
   const cv = document.createElement('canvas');
 
-  // IMPORTANT: keep the texture canvas at the SAME aspect ratio as the visible
-  // artwork / plane (~11.45:1). The previous 1536x256 canvas was ~6:1, so when
-  // mapped onto the very wide top plane it visually squashed the logo vertically.
+  // Keep the texture canvas at the same aspect ratio as the approved artwork.
   cv.width = 2048;
   cv.height = 180;
 
@@ -63,21 +62,80 @@ function makeExactWordmarkDebossMaterial(depth = 1) {
   });
 }
 
-function addExactTopLogo(parent, oldMesh) {
-  // Preserve the supplied artwork's real visible ratio: 1867 / 163 ≈ 11.45.
-  const logoW = 72;
-  const logoH = logoW * (163 / 1867);
+function makeSizeCopyMaterial() {
+  const cv = document.createElement('canvas');
+  cv.width = 1600;
+  cv.height = 210;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fontKerning = 'normal';
+  ctx.font = '400 72px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '9px';
 
+  // Flat tonal print — deliberately clearer than the surrounding micro-copy,
+  // but still restrained against Mineral Graphite. No emboss/deboss simulation.
+  ctx.fillStyle = 'rgba(226,223,215,0.68)';
+  nativeFillText.call(ctx, '50 ML / 1.7 FL. OZ.', cv.width / 2, cv.height / 2);
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+
+  return new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
+
+function addExactWordmark(parent, oldMesh, logoW, depth, renderOrder) {
+  const logoH = logoW * (163 / 1867);
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(logoW, logoH),
-    makeExactWordmarkDebossMaterial(1.0)
+    makeExactWordmarkDebossMaterial(depth)
   );
   mesh.position.copy(oldMesh.position);
-  mesh.position.y += 0.012;
+  mesh.position.z += 0.012;
   mesh.rotation.copy(oldMesh.rotation);
-  mesh.renderOrder = 38;
+  mesh.renderOrder = renderOrder;
   mesh.userData.isLabel = true;
   mesh.userData.isExactTwyneLogo = true;
+  nativeGroupAdd.call(parent, mesh);
+  return mesh;
+}
+
+function addExactTopLogo(parent, oldMesh) {
+  const mesh = addExactWordmark(parent, oldMesh, 72, 1.0, 38);
+  mesh.position.y += 0.012;
+}
+
+function addExactBaseLogo(parent, oldMesh) {
+  // The visible base is only 16 mm high, so the logo is treated as a long,
+  // low house signature: large enough to anchor the pedestal without filling it.
+  const mesh = addExactWordmark(parent, oldMesh, 59, 1.10, 39);
+  mesh.position.x = 0;
+  mesh.position.y = 8.0; // true optical centre of the 16 mm visible base
+  mesh.position.z += 0.006;
+  mesh.userData.isExactTwyneBaseLogo = true;
+}
+
+function addReadableSizeCopy(parent, oldMesh) {
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(47, 6.2),
+    makeSizeCopyMaterial()
+  );
+  mesh.position.copy(oldMesh.position);
+  mesh.position.x = 0;
+  mesh.position.y = 7.9; // gives ~5 mm breathing room above the seam
+  mesh.position.z += 0.014;
+  mesh.rotation.copy(oldMesh.rotation);
+  mesh.renderOrder = 36;
+  mesh.userData.isLabel = true;
+  mesh.userData.isReadableSizeCopy = true;
   nativeGroupAdd.call(parent, mesh);
 }
 
@@ -91,15 +149,41 @@ THREE.Group.prototype.add = function(...objects) {
 
     const w = p.width ?? 0;
     const h = p.height ?? 0;
+    const isHorizontal = Math.abs(obj.rotation.x) < 0.08 && Math.abs(obj.rotation.y) < 0.08;
+
     const isTopWordmark =
       w >= 68 && w <= 72 &&
       h >= 6 && h <= 8 &&
       Math.abs(obj.rotation.x + Math.PI / 2) < 0.08;
 
-    if (!isTopWordmark) continue;
+    const isBaseWordmark =
+      w >= 47 && w <= 49 &&
+      h >= 4.2 && h <= 5.2 &&
+      isHorizontal &&
+      obj.position.y < 12;
 
-    addExactTopLogo(this, obj);
-    obj.visible = false;
+    const isSizeCopy =
+      w >= 41 && w <= 43 &&
+      h >= 5.0 && h <= 5.8 &&
+      isHorizontal &&
+      obj.position.y < 12;
+
+    if (isTopWordmark) {
+      addExactTopLogo(this, obj);
+      obj.visible = false;
+      continue;
+    }
+
+    if (isBaseWordmark) {
+      addExactBaseLogo(this, obj);
+      obj.visible = false;
+      continue;
+    }
+
+    if (isSizeCopy) {
+      addReadableSizeCopy(this, obj);
+      obj.visible = false;
+    }
   }
 
   return result;
