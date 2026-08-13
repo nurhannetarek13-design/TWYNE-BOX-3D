@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 // Pedestal-only polish layer.
-// Keeps the approved TWYNE letterforms, gives the base wordmark a clearly wider
-// luxury spacing, preserves the compressed height, and optically centres it.
+// The lower-base TWYNE now uses the exact same spacing and proportions as the
+// approved top wordmark. Only its physical size is adapted to the 16 mm pedestal.
 const EXACT_TWYNE_PATHS = [
   'M3 1L1 3L1 38L3 40L70 40L72 43L72 158L118 159L120 157L120 42L122 40L191 39L192 3L189 1Z',
   'M368 3L422 159L486 159L516 67L522 54L526 59L537 90L558 158L623 159L676 5L676 2L674 1L630 1L628 3L594 110L590 115L587 112L550 2L497 2L494 6L457 113L454 115L451 111L416 2L370 1Z',
@@ -13,43 +13,33 @@ const EXACT_TWYNE_PATHS = [
 
 const nativeGroupAdd = THREE.Group.prototype.add;
 
-function makePolishedBaseMaterial(depth = 1.10) {
+function makeBaseWordmarkMaterial(depth = 1.10) {
   const cv = document.createElement('canvas');
   cv.width = 2048;
-  cv.height = 300;
+  cv.height = 180;
   const ctx = cv.getContext('2d');
   ctx.clearRect(0, 0, cv.width, cv.height);
 
   const paths = EXACT_TWYNE_PATHS.map(d => new Path2D(d));
-
-  // Roughly 30 source-units of visible air between each letter pair.
-  // This is intentionally much more open than the previous 16-unit version,
-  // while keeping the five letters balanced as one house signature.
-  const shifts = [0, 146, 288, 444, 612];
-  const visibleMinX = 1;
-  const visibleSourceW = 1251;
+  const sourceW = 1867;
   const sourceH = 163;
   const targetW = 1840;
-  const scale = targetW / visibleSourceW;
+  const scale = targetW / sourceW;
   const markH = sourceH * scale;
   const ox = (cv.width - targetW) / 2;
   const oy = (cv.height - markH) / 2;
   const edge = 2.8 * depth;
 
   function draw(dx, dy, fill) {
-    paths.forEach((path, i) => {
-      ctx.save();
-      ctx.translate(
-        ox + dx - (shifts[i] + visibleMinX) * scale,
-        oy + dy
-      );
-      ctx.scale(scale, scale);
-      ctx.fillStyle = fill;
-      ctx.fill(path);
-      ctx.restore();
-    });
+    ctx.save();
+    ctx.translate(ox + dx, oy + dy);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = fill;
+    paths.forEach(path => ctx.fill(path));
+    ctx.restore();
   }
 
+  // Same blind-deboss language as the top house mark.
   draw(-edge, -edge, `rgba(230,230,224,${0.15 * depth})`);
   draw(edge, edge, `rgba(0,0,0,${0.64 * depth})`);
   draw(0, 0, `rgba(6,6,5,${0.54 * depth})`);
@@ -68,17 +58,15 @@ function makePolishedBaseMaterial(depth = 1.10) {
 }
 
 function polishBaseLogo(mesh) {
-  // Slightly wider overall so the added tracking reads as real space rather than
-  // simply shrinking the letters inside the same footprint.
+  // Same exact artwork ratio as the top wordmark; scaled only to suit the pedestal.
   const logoW = 63;
-  const naturalH = logoW * (163 / 1251);
-  const logoH = naturalH * 0.82;
+  const logoH = logoW * (163 / 1867);
 
   mesh.geometry?.dispose?.();
   mesh.geometry = new THREE.PlaneGeometry(logoW, logoH);
-  mesh.material = makePolishedBaseMaterial(1.10);
+  mesh.material = makeBaseWordmarkMaterial(1.10);
 
-  // Optical centre of the 90 mm front face / 16 mm visible base.
+  // True centre of the 90 mm front face / 16 mm visible base.
   mesh.position.x = 0;
   mesh.position.y = 8.0;
   mesh.renderOrder = 40;
