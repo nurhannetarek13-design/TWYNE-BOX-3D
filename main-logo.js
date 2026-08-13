@@ -14,7 +14,7 @@ const EXACT_TWYNE_PATHS = [
 const nativeGroupAdd = THREE.Group.prototype.add;
 const nativeFillText = CanvasRenderingContext2D.prototype.fillText;
 
-function makeExactWordmarkDebossMaterial(depth = 1) {
+function makeExactWordmarkDebossMaterial(depth = 1, letterShiftStep = 0) {
   const cv = document.createElement('canvas');
 
   // Keep the texture canvas at the same aspect ratio as the approved artwork.
@@ -30,17 +30,27 @@ function makeExactWordmarkDebossMaterial(depth = 1) {
   const targetW = 1840;
   const scale = targetW / sourceW;
   const markH = sourceH * scale;
-  const ox = (cv.width - targetW) / 2;
+
+  // For the pedestal logo only, pull each following letter slightly left.
+  // Letter silhouettes stay untouched; only the empty gaps are reduced.
+  const compactSourceW = sourceW - letterShiftStep * (paths.length - 1);
+  const compactTargetW = compactSourceW * scale;
+  const ox = (cv.width - compactTargetW) / 2;
   const oy = (cv.height - markH) / 2;
   const edge = 2.8 * depth;
 
   function draw(dx, dy, fill) {
-    ctx.save();
-    ctx.translate(ox + dx, oy + dy);
-    ctx.scale(scale, scale);
-    ctx.fillStyle = fill;
-    paths.forEach(p => ctx.fill(p));
-    ctx.restore();
+    paths.forEach((p, i) => {
+      ctx.save();
+      ctx.translate(
+        ox + dx - i * letterShiftStep * scale,
+        oy + dy
+      );
+      ctx.scale(scale, scale);
+      ctx.fillStyle = fill;
+      ctx.fill(p);
+      ctx.restore();
+    });
   }
 
   // Tonal blind-deboss simulation only: subtle light lip, darker inner wall,
@@ -92,11 +102,11 @@ function makeSizeCopyMaterial() {
   });
 }
 
-function addExactWordmark(parent, oldMesh, logoW, depth, renderOrder) {
+function addExactWordmark(parent, oldMesh, logoW, depth, renderOrder, letterShiftStep = 0) {
   const logoH = logoW * (163 / 1867);
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(logoW, logoH),
-    makeExactWordmarkDebossMaterial(depth)
+    makeExactWordmarkDebossMaterial(depth, letterShiftStep)
   );
   mesh.position.copy(oldMesh.position);
   mesh.position.z += 0.012;
@@ -114,9 +124,9 @@ function addExactTopLogo(parent, oldMesh) {
 }
 
 function addExactBaseLogo(parent, oldMesh) {
-  // The visible base is only 16 mm high, so the logo is treated as a long,
-  // low house signature: large enough to anchor the pedestal without filling it.
-  const mesh = addExactWordmark(parent, oldMesh, 59, 1.10, 39);
+  // Same letterforms as the approved logo, but the pedestal version has slightly
+  // tighter spacing so it reads as one compact house signature on the 16 mm base.
+  const mesh = addExactWordmark(parent, oldMesh, 59, 1.10, 39, 30);
   mesh.position.x = 0;
   mesh.position.y = 8.0; // true optical centre of the 16 mm visible base
   mesh.position.z += 0.006;
