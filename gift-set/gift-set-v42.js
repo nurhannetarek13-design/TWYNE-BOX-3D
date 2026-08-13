@@ -29,12 +29,17 @@ THREE.Group.prototype.add = function (...objects) {
   return ADD.apply(this, objects);
 };
 
-await import('./gift-set-v41.js?build=42');
+await import('./gift-set-v41.js?build=43');
 THREE.Group.prototype.add = ADD;
 
-// Tighten TWYNE spacing a little more by compressing only the horizontal axis.
 if (refs.logo) {
-  refs.logo.scale.set(0.72, 0.88, 1);
+  refs.logo.scale.set(0.84, 0.84, 1);
+  if (refs.logo.material) {
+    refs.logo.material.alphaTest = 0.03;
+    refs.logo.material.depthTest = false;
+    refs.logo.material.depthWrite = false;
+    refs.logo.material.needsUpdate = true;
+  }
 }
 
 if (refs.main && refs.group) {
@@ -52,7 +57,7 @@ if (refs.main && refs.group) {
   const text = 'VOLUME I - KENOPSIA';
   const chars = [...text];
   const widths = chars.map(ch => x.measureText(ch).width);
-  const tracking = 100;
+  const tracking = 65;
   const total = widths.reduce((a,b)=>a+b,0) + tracking * (chars.length - 1);
   let px = (c.width - total) / 2;
 
@@ -83,6 +88,6 @@ if (refs.main && refs.group) {
   m.position.copy(refs.main.position);
   m.position.y += 0.035;
   m.renderOrder = 50200;
-  m.name = 'VOLUME_KENOPSIA_TRACKING_100_V42';
+  m.name = 'VOLUME_KENOPSIA_TRACKING_65_V42';
   refs.group.add(m);
 }
