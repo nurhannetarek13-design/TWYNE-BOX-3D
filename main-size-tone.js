@@ -18,4 +18,4 @@ THREE.Group.prototype.add = function(...objects) {
   return result;
 };
 
-await import('./main-base-polish.js');
+await import('./main-base-polish-core.js');
