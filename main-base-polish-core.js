@@ -2,8 +2,9 @@ import * as THREE from 'three';
 
 // Pedestal-only polish layer.
 // The lower-base TWYNE is now derived directly from the ACTUAL top-view logo mesh:
-// same artwork, spacing, compression, texture and blind-deboss response.
-// Only its physical width is reduced to suit the 16 mm pedestal.
+// same artwork, spacing, compression, texture, blind-deboss response AND footprint ratio.
+// It is intentionally the same 72 mm-wide house mark as the top view so it reads
+// equally spread/open on the 90 mm face instead of looking narrower on the base.
 const nativeGroupAdd = THREE.Group.prototype.add;
 
 let topLogoTemplate = null;
@@ -24,18 +25,18 @@ function rememberTopLogo(mesh) {
 function matchBaseToTop(mesh) {
   if (!mesh?.isMesh) return;
 
-  const logoW = 63;
-
-  // Use the exact visible aspect ratio of the real top mesh when available.
+  // Exact same physical width as the top-view logo: 72 mm on a 90 mm face.
+  // This removes the previous visual difference caused by shrinking the base to 63 mm.
   const topParams = topLogoTemplate?.geometry?.parameters;
   const topW = topParams?.width || 72;
   const topH = topParams?.height || (72 * 163 / 1867);
-  const logoH = logoW * (topH / topW);
+  const logoW = topW;
+  const logoH = topH;
 
   mesh.geometry?.dispose?.();
   mesh.geometry = new THREE.PlaneGeometry(logoW, logoH);
 
-  // Clone the ACTUAL top material so the deboss tone/texture is identical 1:1.
+  // Clone the ACTUAL top material so spacing/compression/deboss rendering is identical 1:1.
   if (topLogoTemplate?.material) {
     mesh.material = topLogoTemplate.material.clone();
     if (topLogoTemplate.material.map) {
@@ -50,6 +51,7 @@ function matchBaseToTop(mesh) {
   mesh.renderOrder = 40;
   mesh.userData.isBasePolished = true;
   mesh.userData.matchesTopLogoExactly = true;
+  mesh.userData.sameTopFootprint = true;
 }
 
 THREE.Group.prototype.add = function(...objects) {
@@ -58,8 +60,6 @@ THREE.Group.prototype.add = function(...objects) {
   for (const obj of objects) {
     if (!obj?.isMesh) continue;
 
-    // The top exact logo is created before the base logo in the box build order,
-    // so it becomes the single source of truth for the pedestal mark.
     rememberTopLogo(obj);
 
     if (obj.userData?.isExactTwyneBaseLogo && !obj.userData?.isBasePolished) {
