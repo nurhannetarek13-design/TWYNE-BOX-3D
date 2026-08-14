@@ -107,7 +107,7 @@ THREE.Group.prototype.add=function(...os){
   return A.apply(this,os);
 };
 
-await import('./gift-set-v36.js?build=53');
+await import('./gift-set-v36.js?build=54');
 THREE.Group.prototype.add=A;
 
 const gm=graphiteMap();
@@ -172,10 +172,10 @@ function addFrontText(text,w,z,fs,tr,ord){
   R.sg?.add(mesh);
 }
 
-// Match the supplied reference: same clean sans face with airy tracking.
-addFrontText('VOLUME I — KENOPSIA',92,30.6,106,20,1);
-// Same face, normal spacing, clearly subordinate to the volume line.
-addFrontText('EAU DE PARFUM',48,39.0,72,3,2);
+// Keep the reference font/tracking, but make the whole line physically narrower than the TWYNE logo.
+addFrontText('VOLUME I — KENOPSIA',50,30.6,106,20,1);
+// Same face, normal spacing and clearly subordinate.
+addFrontText('EAU DE PARFUM',34,38.0,72,3,2);
 
 R.labels.forEach((l,i)=>styleTesterLabel(l,i));
 
