@@ -2,119 +2,150 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const canvas = document.getElementById('canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.08;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#e8e3da');
+scene.background = new THREE.Color('#dedbd4');
 
-const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(92, 62, 112);
+const camera = new THREE.PerspectiveCamera(34, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(84, 58, 108);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
-controls.target.set(0, 7, 0);
-controls.minDistance = 70;
+controls.target.set(0, 5, 0);
+controls.minDistance = 68;
 controls.maxDistance = 220;
 
-scene.add(new THREE.HemisphereLight(0xf7f1e8, 0x6f6a63, 2.0));
+scene.add(new THREE.HemisphereLight(0xf7f2e8, 0x5c5955, 2.2));
 
-const key = new THREE.DirectionalLight(0xfff6e9, 4.1);
-key.position.set(-70, 110, 80);
+const key = new THREE.DirectionalLight(0xfff7eb, 4.1);
+key.position.set(-65, 105, 75);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
 key.shadow.camera.left = -100;
 key.shadow.camera.right = 100;
 key.shadow.camera.top = 120;
-key.shadow.camera.bottom = -90;
+key.shadow.camera.bottom = -100;
 scene.add(key);
 
-const fill = new THREE.DirectionalLight(0xcbd4df, 1.15);
-fill.position.set(90, 45, -80);
+const fill = new THREE.DirectionalLight(0xc8d1dc, 1.2);
+fill.position.set(90, 42, -70);
 scene.add(fill);
 
-const rim = new THREE.DirectionalLight(0xffead1, 1.0);
-rim.position.set(20, 85, -100);
-scene.add(rim);
-
-const floorMat = new THREE.MeshStandardMaterial({ color: '#ded8ce', roughness: 0.96, metalness: 0 });
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), floorMat);
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(500, 500),
+  new THREE.MeshStandardMaterial({ color: '#d5d1c8', roughness: 0.98 })
+);
 floor.rotation.x = -Math.PI / 2;
-floor.position.y = -43;
+floor.position.y = -45;
 floor.receiveShadow = true;
 scene.add(floor);
 
-const CREAM = '#ECE8DF';
-const INK = '#191919';
-const W = 28;
-const H = 75;
-const D = 16;
-const T = 0.72;
+const W = 22;
+const H = 78;
+const D = 15;
+const T = 0.7;
+const BLACK = '#171717';
+const CREAM = '#E7E4DD';
+const INK = '#F0ECE4';
 
-const cartonMat = new THREE.MeshStandardMaterial({
-  color: CREAM,
-  roughness: 0.92,
-  metalness: 0,
-  bumpScale: 0.035
+const cartonMat = new THREE.MeshStandardMaterial({ color: BLACK, roughness: 0.93, metalness: 0.01 });
+const edgeMat = new THREE.MeshStandardMaterial({ color: '#111111', roughness: 0.88 });
+const creamMat = new THREE.MeshStandardMaterial({ color: CREAM, roughness: 0.95, metalness: 0 });
+const glassMat = new THREE.MeshPhysicalMaterial({
+  color: '#241d1a', roughness: 0.18, transmission: 0.08, transparent: true,
+  opacity: 0.95, thickness: 1.1, ior: 1.46
 });
+const sprayMat = new THREE.MeshStandardMaterial({ color: '#0c0c0c', roughness: 0.3, metalness: 0.2 });
 
-const innerMat = new THREE.MeshStandardMaterial({ color: '#D9D3C9', roughness: 0.96, metalness: 0 });
+const box = new THREE.Group();
+box.rotation.y = -0.08;
+scene.add(box);
 
-const boxGroup = new THREE.Group();
-boxGroup.rotation.y = -0.08;
-scene.add(boxGroup);
-
-function panel(w, h, d, material, x, y, z) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-  mesh.position.set(x, y, z);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  boxGroup.add(mesh);
-  return mesh;
+function makePanel(w, h, d, mat, x, y, z, parent = box) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  parent.add(m);
+  return m;
 }
 
-// Folding-carton shell, open at the top.
-panel(W, H, T, cartonMat, 0, 0, D / 2);
-panel(W, H, T, cartonMat, 0, 0, -D / 2);
-panel(T, H, D - T, cartonMat, -W / 2, 0, 0);
-panel(T, H, D - T, cartonMat, W / 2, 0, 0);
-panel(W - T, T, D - T, innerMat, 0, -H / 2, 0);
+// Slim rectangular folding-carton shell.
+makePanel(W, H, T, cartonMat, 0, 0, D / 2);
+makePanel(W, H, T, cartonMat, 0, 0, -D / 2);
+makePanel(T, H, D - T, cartonMat, -W / 2, 0, 0);
+makePanel(T, H, D - T, cartonMat, W / 2, 0, 0);
+makePanel(W - T, T, D - T, edgeMat, 0, -H / 2, 0);
 
-// Rear hinged closure flap.
+// Cream inner cradle visible at the opening, like the reference.
+const inner = new THREE.Group();
+box.add(inner);
+makePanel(W - 3.2, 8.5, D - 3.0, creamMat, 0, H / 2 - 7.0, 0, inner);
+makePanel(W - 5.2, 2.0, D - 4.4, new THREE.MeshStandardMaterial({ color: '#d6d2ca', roughness: 0.97 }), 0, H / 2 - 2.8, 0, inner);
+
+// Main top flap hinged from the back edge.
 const flapPivot = new THREE.Group();
 flapPivot.position.set(0, H / 2, -D / 2);
-boxGroup.add(flapPivot);
+box.add(flapPivot);
 
-const flap = new THREE.Mesh(new THREE.BoxGeometry(W, D + 1.8, T), cartonMat);
-flap.position.y = (D + 1.8) / 2;
-flap.castShadow = true;
-flap.receiveShadow = true;
-flapPivot.add(flap);
+const flap = makePanel(W, D + 0.6, T, cartonMat, 0, (D + 0.6) / 2, 0, flapPivot);
 
-// Small tuck tab at the end of the closure flap.
 const tuckPivot = new THREE.Group();
-tuckPivot.position.set(0, D + 1.8, 0);
+tuckPivot.position.set(0, D + 0.6, 0);
 flapPivot.add(tuckPivot);
-const tuck = new THREE.Mesh(new THREE.BoxGeometry(W - 2.4, 8.5, T * 0.92), cartonMat);
-tuck.position.y = 4.25;
-tuck.castShadow = true;
-tuckPivot.add(tuck);
+const tuck = makePanel(W - 2.0, 9.2, T * 0.9, cartonMat, 0, 4.6, 0, tuckPivot);
 
-function canvasTexture(draw, width = 768, height = 2048) {
+// Two small side dust flaps to echo real folding-carton construction.
+const leftDust = new THREE.Group();
+leftDust.position.set(-W / 2, H / 2 - 0.4, 0);
+box.add(leftDust);
+const ld = makePanel(D - 2.3, 6.2, T * 0.8, cartonMat, 0, 3.1, 0, leftDust);
+ld.rotation.z = Math.PI / 2;
+
+const rightDust = new THREE.Group();
+rightDust.position.set(W / 2, H / 2 - 0.4, 0);
+box.add(rightDust);
+const rd = makePanel(D - 2.3, 6.2, T * 0.8, cartonMat, 0, 3.1, 0, rightDust);
+rd.rotation.z = -Math.PI / 2;
+
+// 2ml sample vial inside.
+const vial = new THREE.Group();
+box.add(vial);
+
+const bottle = new THREE.Mesh(new THREE.CylinderGeometry(4.7, 4.7, 50, 40), glassMat);
+bottle.castShadow = true;
+vial.add(bottle);
+
+const collar = new THREE.Mesh(new THREE.CylinderGeometry(4.8, 4.8, 5.6, 36), sprayMat);
+collar.position.y = 27.2;
+collar.castShadow = true;
+vial.add(collar);
+
+const actuator = new THREE.Mesh(new THREE.CylinderGeometry(3.3, 3.3, 7.2, 32), sprayMat);
+actuator.position.y = 33.4;
+actuator.castShadow = true;
+vial.add(actuator);
+
+const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 1.35, 16), sprayMat);
+nozzle.rotation.x = Math.PI / 2;
+nozzle.position.set(0, 34.4, 3.35);
+vial.add(nozzle);
+
+function makeCanvasTexture(draw, w = 700, h = 1800) {
   const c = document.createElement('canvas');
-  c.width = width;
-  c.height = height;
+  c.width = w;
+  c.height = h;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = CREAM;
-  ctx.fillRect(0, 0, width, height);
-  draw(ctx, width, height);
+  draw(ctx, w, h);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -124,29 +155,26 @@ function canvasTexture(draw, width = 768, height = 2048) {
 async function frontTexture() {
   await document.fonts.ready;
   const c = document.createElement('canvas');
-  c.width = 768;
-  c.height = 2048;
+  c.width = 700;
+  c.height = 1800;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = CREAM;
+  ctx.fillStyle = BLACK;
   ctx.fillRect(0, 0, c.width, c.height);
 
   const logo = new Image();
-  logo.src = '../assets/twyne-wordmark-tight-black.svg';
-  await new Promise((resolve) => {
-    logo.onload = resolve;
-    logo.onerror = resolve;
-  });
+  logo.src = '../assets/twyne-wordmark-new-cream.svg';
+  await new Promise(resolve => { logo.onload = resolve; logo.onerror = resolve; });
 
   if (logo.naturalWidth) {
-    const targetW = 390;
+    const targetW = 310;
     const ratio = logo.naturalHeight / logo.naturalWidth;
     const targetH = targetW * ratio;
-    ctx.drawImage(logo, (c.width - targetW) / 2, (c.height - targetH) / 2, targetW, targetH);
+    ctx.drawImage(logo, (c.width - targetW) / 2, 1390, targetW, targetH);
   } else {
     ctx.fillStyle = INK;
-    ctx.font = '500 58px Manrope';
+    ctx.font = '500 44px Manrope';
     ctx.textAlign = 'center';
-    ctx.fillText('TWYNE', c.width / 2, c.height / 2);
+    ctx.fillText('TWYNE', c.width / 2, 1470);
   }
 
   const tex = new THREE.CanvasTexture(c);
@@ -156,153 +184,101 @@ async function frontTexture() {
 }
 
 function backTexture() {
-  return canvasTexture((ctx, w, h) => {
+  return makeCanvasTexture((ctx, w, h) => {
+    ctx.fillStyle = BLACK;
+    ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = INK;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    ctx.font = '500 56px Manrope';
-    ctx.letterSpacing = '4px';
-    ctx.fillText('SOTTO VOCE', w / 2, 455);
-
-    ctx.font = '400 38px Manrope';
-    ctx.fillText('2ml', w / 2, 560);
-
-    ctx.font = '600 42px Manrope';
-    ctx.fillText('WEAR THIS FIRST.', w / 2, 1235);
-
-    ctx.font = '400 28px Manrope';
-    ctx.fillText('Open the 50ml only when', w / 2, 1462);
-    ctx.fillText("you're sure.", w / 2, 1506);
+    ctx.font = '500 42px Manrope';
+    ctx.fillText('SOTTO VOCE', w / 2, 420);
+    ctx.font = '400 30px Manrope';
+    ctx.fillText('2ml', w / 2, 500);
+    ctx.font = '600 34px Manrope';
+    ctx.fillText('WEAR THIS FIRST.', w / 2, 1250);
   });
 }
 
-function labelPlane(texture, z, rotY = 0) {
-  const mat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.92, metalness: 0 });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.55, H - 0.55), mat);
-  mesh.position.set(0, 0, z);
-  mesh.rotation.y = rotY;
-  mesh.castShadow = false;
-  boxGroup.add(mesh);
-  return mesh;
+function addArtwork(texture, z, ry = 0) {
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(W - 0.45, H - 0.45),
+    new THREE.MeshStandardMaterial({ map: texture, roughness: 0.93, metalness: 0 })
+  );
+  plane.position.set(0, 0, z);
+  plane.rotation.y = ry;
+  box.add(plane);
 }
 
-const frontTex = await frontTexture();
-labelPlane(frontTex, D / 2 + T / 2 + 0.03, 0);
-labelPlane(backTexture(), -D / 2 - T / 2 - 0.03, Math.PI);
+addArtwork(await frontTexture(), D / 2 + T / 2 + 0.025, 0);
+addArtwork(backTexture(), -D / 2 - T / 2 - 0.025, Math.PI);
 
-// 2 ml spray vial.
-const vial = new THREE.Group();
-scene.add(vial);
-
-const glass = new THREE.MeshPhysicalMaterial({
-  color: '#2a211d',
-  roughness: 0.18,
-  metalness: 0,
-  transmission: 0.12,
-  transparent: true,
-  opacity: 0.92,
-  thickness: 1.3,
-  ior: 1.46
-});
-
-const liquidMat = new THREE.MeshPhysicalMaterial({ color: '#5a3823', roughness: 0.24, transparent: true, opacity: 0.62 });
-const blackMat = new THREE.MeshStandardMaterial({ color: '#111111', roughness: 0.28, metalness: 0.18 });
-
-const bottle = new THREE.Mesh(new THREE.CylinderGeometry(5.0, 5.0, 49, 40), glass);
-bottle.castShadow = true;
-vial.add(bottle);
-
-const liquid = new THREE.Mesh(new THREE.CylinderGeometry(4.25, 4.25, 37, 32), liquidMat);
-liquid.position.y = -4.5;
-vial.add(liquid);
-
-const collar = new THREE.Mesh(new THREE.CylinderGeometry(5.05, 5.05, 6.0, 36), blackMat);
-collar.position.y = 27.4;
-collar.castShadow = true;
-vial.add(collar);
-
-const actuator = new THREE.Mesh(new THREE.CylinderGeometry(3.45, 3.45, 7.2, 32), blackMat);
-actuator.position.y = 33.6;
-actuator.castShadow = true;
-vial.add(actuator);
-
-const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 1.35, 16), blackMat);
-nozzle.rotation.x = Math.PI / 2;
-nozzle.position.set(0, 34.7, 3.55);
-vial.add(nozzle);
-
-const vialLabelTex = canvasTexture((ctx, w, h) => {
-  ctx.fillStyle = INK;
+// Minimal cream vial label.
+const vialLabelTex = makeCanvasTexture((ctx, w, h) => {
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#171717';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '600 88px Manrope';
-  ctx.fillText('TWYNE', w / 2, 720);
-  ctx.font = '500 48px Manrope';
-  ctx.fillText('SOTTO VOCE', w / 2, 910);
-  ctx.font = '400 34px Manrope';
-  ctx.fillText('2ml', w / 2, 1015);
-}, 512, 1536);
+  ctx.font = '600 70px Manrope';
+  ctx.fillText('TWYNE', w / 2, 650);
+  ctx.font = '500 38px Manrope';
+  ctx.fillText('SOTTO VOCE', w / 2, 820);
+  ctx.font = '400 28px Manrope';
+  ctx.fillText('2ml', w / 2, 900);
+}, 500, 1500);
 
 const vialLabel = new THREE.Mesh(
-  new THREE.PlaneGeometry(8.3, 25.5),
-  new THREE.MeshStandardMaterial({ map: vialLabelTex, roughness: 0.9, metalness: 0 })
+  new THREE.PlaneGeometry(8.0, 23.0),
+  new THREE.MeshStandardMaterial({ map: vialLabelTex, roughness: 0.94 })
 );
-vialLabel.position.set(0, -2.5, 5.02);
+vialLabel.position.set(0, -3.5, 4.74);
 vial.add(vialLabel);
 
-let openAmount = 0.72;
+let openAmount = 0.68;
 function updateOpen() {
-  // Closed = flap flat across top. Open = flap standing upward behind the carton.
+  // 0 = shut, 1 = upright open flap.
   flapPivot.rotation.x = (1 - openAmount) * Math.PI / 2;
-  tuckPivot.rotation.x = -openAmount * 0.55;
+  tuckPivot.rotation.x = -0.62 * openAmount;
+  leftDust.rotation.z = -0.5 * openAmount;
+  rightDust.rotation.z = 0.5 * openAmount;
 
-  vial.position.set(0, -9 + openAmount * 46, 0.15 + openAmount * 1.3);
-  vial.rotation.z = -0.055 * openAmount;
-  vial.rotation.x = 0.04 * openAmount;
+  // Vial lifts only slightly when open, keeping the reference silhouette.
+  vial.position.set(0, -6 + openAmount * 27, 0.15);
+  vial.rotation.z = -0.018 * openAmount;
 }
 updateOpen();
 
-// Fine paper-edge lines.
-const edgeMat = new THREE.LineBasicMaterial({ color: 0x9a958d, transparent: true, opacity: 0.22 });
-const edgeGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(W, H, D));
-const edgeLines = new THREE.LineSegments(edgeGeo, edgeMat);
-edgeLines.position.y = 0;
-boxGroup.add(edgeLines);
-
-function setCamera(pos, target = new THREE.Vector3(0, 8, 0), keyName) {
+function setCamera(pos, target, id) {
   camera.position.set(...pos);
-  controls.target.copy(target);
+  controls.target.set(...target);
   controls.update();
   document.querySelectorAll('.camera-grid .ui-btn').forEach(b => b.classList.remove('active'));
-  const active = document.getElementById(keyName);
-  if (active) active.classList.add('active');
+  document.getElementById(id)?.classList.add('active');
 }
 
-document.getElementById('ctrl-open').addEventListener('input', (e) => {
+document.getElementById('ctrl-open').addEventListener('input', e => {
   openAmount = Number(e.target.value);
   updateOpen();
 });
-
-document.getElementById('cam-3q').addEventListener('click', () => setCamera([92, 62, 112], new THREE.Vector3(0, 7, 0), 'cam-3q'));
-document.getElementById('cam-front').addEventListener('click', () => setCamera([0, 9, 145], new THREE.Vector3(0, 3, 0), 'cam-front'));
-document.getElementById('cam-back').addEventListener('click', () => setCamera([0, 9, -145], new THREE.Vector3(0, 3, 0), 'cam-back'));
-document.getElementById('cam-top').addEventListener('click', () => setCamera([0, 150, 74], new THREE.Vector3(0, 5, 0), 'cam-top'));
+document.getElementById('cam-3q').addEventListener('click', () => setCamera([84,58,108],[0,5,0],'cam-3q'));
+document.getElementById('cam-front').addEventListener('click', () => setCamera([0,5,138],[0,2,0],'cam-front'));
+document.getElementById('cam-side').addEventListener('click', () => setCamera([128,10,0],[0,2,0],'cam-side'));
+document.getElementById('cam-top').addEventListener('click', () => setCamera([0,145,66],[0,4,0],'cam-top'));
 
 document.getElementById('btn-render').addEventListener('click', () => {
   renderer.render(scene, camera);
-  const link = document.createElement('a');
-  link.download = 'TWYNE_matching_sample_box_render.png';
-  link.href = renderer.domElement.toDataURL('image/png');
-  link.click();
+  const a = document.createElement('a');
+  a.download = 'TWYNE_matching_sample_box_v2.png';
+  a.href = renderer.domElement.toDataURL('image/png');
+  a.click();
 });
 
-function resize() {
+window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-}
-window.addEventListener('resize', resize);
+});
 
 function animate() {
   requestAnimationFrame(animate);
