@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 // FINAL TWYNE FINISH SYSTEM
-// TOP: blind emboss, graphite-on-graphite (raised read, no ink/foil)
+// TOP + BASE: identical blind emboss, graphite-on-graphite (same wordmark,
+// spacing, proportions, colour and raised finish)
 // FRONT: existing flat tonal typography remains untouched
-// BASE: flat matte muted-cream TWYNE print
 
 const EXACT_TWYNE_PATHS = [
   'M3 1L1 3L1 38L3 40L70 40L72 43L72 158L118 159L120 157L120 42L122 40L191 39L192 3L189 1Z',
@@ -17,7 +17,7 @@ const sourceW = 1867;
 const sourceH = 163;
 const nativeGroupAdd = THREE.Group.prototype.add;
 
-function drawWordmarkTexture({ mode }) {
+function drawWordmarkTexture() {
   const cv = document.createElement('canvas');
   cv.width = 2048;
   cv.height = 180;
@@ -40,16 +40,11 @@ function drawWordmarkTexture({ mode }) {
     ctx.restore();
   };
 
-  if (mode === 'emboss') {
-    // Raised blind emboss: shadow falls upper-left, light catches lower-right.
-    // The centre remains graphite-tonal, so this reads as formed paper, not ink.
-    draw(-3.2, -3.2, 'rgba(0,0,0,0.46)');
-    draw(3.0, 3.0, 'rgba(238,236,229,0.19)');
-    draw(0, 0, 'rgba(77,77,73,0.22)');
-  } else {
-    // Muted mineral cream, matte flat print.
-    draw(0, 0, 'rgba(216,210,198,0.94)');
-  }
+  // Raised blind emboss: same graphite-on-graphite treatment for TOP and BASE.
+  // No cream ink, no foil, no separate base-specific styling.
+  draw(-3.2, -3.2, 'rgba(0,0,0,0.46)');
+  draw(3.0, 3.0, 'rgba(238,236,229,0.19)');
+  draw(0, 0, 'rgba(77,77,73,0.22)');
 
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -57,16 +52,9 @@ function drawWordmarkTexture({ mode }) {
   return tex;
 }
 
-const topEmbossMaterial = new THREE.MeshBasicMaterial({
-  map: drawWordmarkTexture({ mode: 'emboss' }),
-  transparent: true,
-  depthWrite: false,
-  side: THREE.DoubleSide,
-  toneMapped: false,
-});
-
-const baseCreamMaterial = new THREE.MeshBasicMaterial({
-  map: drawWordmarkTexture({ mode: 'cream' }),
+// Single source of truth for both TOP and BASE logo finish.
+const sharedEmbossMaterial = new THREE.MeshBasicMaterial({
+  map: drawWordmarkTexture(),
   transparent: true,
   depthWrite: false,
   side: THREE.DoubleSide,
@@ -78,33 +66,30 @@ function applyFinalFinish(mesh) {
 
   const isBase = !!mesh.userData.isExactTwyneBaseLogo;
   const isTop = !isBase && Math.abs(mesh.rotation.x + Math.PI / 2) < 0.08;
+  if (!isTop && !isBase) return;
+
+  // TOP and BASE use the exact same wordmark geometry ratio, spacing and material.
+  const logoW = 72;
+  const logoH = logoW * (sourceH / sourceW);
+  mesh.geometry?.dispose?.();
+  mesh.geometry = new THREE.PlaneGeometry(logoW, logoH);
+  mesh.material = sharedEmbossMaterial.clone();
+  mesh.material.map = sharedEmbossMaterial.map;
+  mesh.material.needsUpdate = true;
 
   if (isTop) {
-    // Keep exact approved top-view width/proportions; change finish only.
-    const logoW = 72;
-    const logoH = logoW * (sourceH / sourceW);
-    mesh.geometry?.dispose?.();
-    mesh.geometry = new THREE.PlaneGeometry(logoW, logoH);
-    mesh.material = topEmbossMaterial.clone();
     mesh.position.y += 0.010;
     mesh.renderOrder = 50;
-    mesh.userData.finish = 'blind-emboss';
-    return;
-  }
-
-  if (isBase) {
-    // Same exact wordmark proportions and spread as the top view.
-    const logoW = 72;
-    const logoH = logoW * (sourceH / sourceW);
-    mesh.geometry?.dispose?.();
-    mesh.geometry = new THREE.PlaneGeometry(logoW, logoH);
-    mesh.material = baseCreamMaterial.clone();
+  } else {
+    // Centre the identical top-view wordmark on the 16 mm visible pedestal.
     mesh.position.x = 0;
     mesh.position.y = 8.0;
     mesh.position.z += 0.012;
     mesh.renderOrder = 51;
-    mesh.userData.finish = 'flat-matte-cream-print';
   }
+
+  mesh.userData.finish = 'blind-emboss';
+  mesh.userData.matchesTopExactly = true;
 }
 
 THREE.Group.prototype.add = function(...objects) {
