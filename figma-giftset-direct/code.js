@@ -1,7 +1,7 @@
 const MM = 72 / 25.4;
 const mm = (v) => v * MM;
 
-const CREAM = '#E7E4DD';
+const CREAM = '#ECE8DF';
 const INK = '#171714';
 const MUTED = '#68635B';
 const GUIDE = '#4F4A43';
@@ -111,18 +111,20 @@ function addInsideArtwork(parent) {
     size: 7.2, align: 'CENTER', color: MUTED
   });
 
-  const col = 186 / 4;
+  const centersMM = [18, 68, 118, 168];
+  const groupWidthMM = 36;
   PIECES.forEach((p, i) => {
-    const left = i * col;
-    const cx = mm(left + col / 2);
+    const centerMM = centersMM[i];
+    const leftMM = centerMM - groupWidthMM / 2;
+    const cx = mm(centerMM);
     vial(parent, cx, mm(118));
-    text(parent, p.no, mm(left + 4), mm(154), mm(col - 8), mm(7), {
+    text(parent, p.no, mm(leftMM), mm(154), mm(groupWidthMM), mm(7), {
       size: 5.5, align: 'CENTER', color: MUTED, tracking: 0.7
     });
-    text(parent, p.name, mm(left + 3), mm(162), mm(col - 6), mm(8), {
+    text(parent, p.name, mm(leftMM), mm(162), mm(groupWidthMM), mm(8), {
       size: 6.7, bold: true, align: 'CENTER', tracking: 0.25
     });
-    text(parent, p.notes, mm(left + 4), mm(172), mm(col - 8), mm(13), {
+    text(parent, p.notes, mm(leftMM), mm(172), mm(groupWidthMM), mm(13), {
       size: 5.2, align: 'CENTER', color: MUTED, lineHeight: 6.4
     });
   });
@@ -136,7 +138,7 @@ function createProductionGuide() {
   const board = figma.createFrame();
   board.name = 'PRODUCTION GUIDE — CUT + FOLD';
   board.resize(mm(216), mm(244));
-  board.fills = [solid('#F4F1EA')];
+  board.fills = [solid('#F5F2EB')];
   board.clipsContent = false;
 
   const sheet = figma.createFrame();
@@ -179,7 +181,7 @@ function createProductionGuide() {
   text(sheet, 'BOTTOM PANEL — 104 MM', mm(8), mm(111), mm(70), mm(8), {
     size: 6.2, bold: true, color: GUIDE
   });
-  text(sheet, 'BOTTLE ROW STARTS 14 MM BELOW FOLD', mm(8), mm(123), mm(170), mm(8), {
+  text(sheet, 'BOTTLE CENTERS — 18 / 68 / 118 / 168 MM', mm(8), mm(123), mm(170), mm(8), {
     size: 6.4, align: 'CENTER', color: MUTED, tracking: 0.3
   });
   text(sheet, '01            02            03            04', mm(18), mm(150), mm(150), mm(8), {
@@ -237,7 +239,7 @@ Promise.all([
 
   const spec = figma.createText();
   spec.fontName = { family: 'Inter', style: 'Regular' };
-  spec.characters = 'FINISHED FOLDED SIZE 186 × 104 MM  /  OPEN SIZE 186 × 208 MM  /  SCORE + FOLD AT 104 MM  /  BOTTLES START 14 MM BELOW FOLD  /  CUT ONLY 4 OUTER EDGES  /  CREAMY #E7E4DD  /  EXACT TWYNE MASTER WORDMARK';
+  spec.characters = 'FINISHED FOLDED SIZE 186 × 104 MM  /  OPEN SIZE 186 × 208 MM  /  SCORE + FOLD AT 104 MM  /  BOTTLE CENTERS 18 / 68 / 118 / 168 MM  /  CUT ONLY 4 OUTER EDGES  /  CREAMY #ECE8DF  /  EXACT TWYNE MASTER WORDMARK';
   spec.fontSize = 7;
   spec.fills = [solid(MUTED)];
   spec.x = inside.x;
@@ -246,7 +248,7 @@ Promise.all([
 
   figma.currentPage.selection = [inside, outside, guide, folded];
   figma.viewport.scrollAndZoomIntoView([inside, outside, guide, folded]);
-  figma.closePlugin('TWYNE Gift Set insert updated with exact master wordmark');
+  figma.closePlugin('TWYNE Gift Set insert updated — creamy paper + wider bottle spacing');
 }).catch((err) => {
   figma.closePlugin('TWYNE plugin error: ' + String(err));
 });
