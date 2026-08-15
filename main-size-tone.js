@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
-// Soften only the front size copy so it sits at the same quiet tonal level
-// as the rest of the supporting box typography. No size or position changes.
+// Keep the 50 ML supporting copy fully visible in the same dark tonal system.
 const nativeGroupAdd = THREE.Group.prototype.add;
 
 THREE.Group.prototype.add = function(...objects) {
@@ -9,10 +8,11 @@ THREE.Group.prototype.add = function(...objects) {
 
   for (const obj of objects) {
     if (!obj?.isMesh || !obj.userData?.isReadableSizeCopy || !obj.material) continue;
-    obj.material.opacity = 0.72;
+    obj.material.opacity = 1.0;
     obj.material.transparent = true;
     obj.material.needsUpdate = true;
-    obj.userData.isSizeCopySoftened = true;
+    obj.userData.isSizeCopySoftened = false;
+    obj.userData.isSizeCopyDark = true;
   }
 
   return result;
