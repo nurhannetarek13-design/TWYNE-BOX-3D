@@ -4,14 +4,25 @@ import * as THREE from 'three';
 // FRONT: VOLUME I / KENOPSIA only
 // SIDES: product + house details
 // BACK: film metadata follows the exact same house typography system
-// All supporting copy uses Inter Tight, regular weight, controlled tracking,
-// DARK tonal ink and flat print. The custom TWYNE emboss system is untouched.
+// All supporting copy uses the SAME Dries-reference equivalent used before:
+// Inter Tight 400 / Helvetica Neue fallback, controlled tracking, DARK tonal ink.
+// The custom TWYNE wordmark / emboss system is untouched.
 const nativeGroupAdd = THREE.Group.prototype.add;
 const nativeFillText = CanvasRenderingContext2D.prototype.fillText;
 
 const HOUSE_FONT = '"Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
 const HOUSE_INK = 'rgba(7,7,6,0.74)';
 const HOUSE_INK_SOFT = 'rgba(7,7,6,0.58)';
+
+// Load the exact house face BEFORE any canvas text texture is generated.
+// This prevents the browser from silently baking Helvetica/Arial fallback into the 3D textures.
+if (!document.querySelector('link[data-twyne-house-font="inter-tight"]')) {
+  const houseFontLink = document.createElement('link');
+  houseFontLink.rel = 'stylesheet';
+  houseFontLink.dataset.twyneHouseFont = 'inter-tight';
+  houseFontLink.href = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400&display=swap';
+  document.head.appendChild(houseFontLink);
+}
 
 function makeHouseTextMaterial(text, {
   fontSize = 78,
@@ -142,7 +153,6 @@ THREE.Group.prototype.add = function(...objects) {
     if (!p) continue;
 
     // ---------- BACK ----------
-    // Keep the film image/inset; only harmonise the metadata typography below it.
     if (obj.userData?.isFilmMeta) {
       obj.material?.dispose?.();
       obj.material = makeBackMetaMaterial();
@@ -256,4 +266,7 @@ THREE.Group.prototype.add = function(...objects) {
   return result;
 };
 
+// Critical: wait for Inter Tight 400 BEFORE importing the renderer/build chain.
+await document.fonts?.load?.('400 96px "Inter Tight"');
+await document.fonts?.ready;
 await import('./main-finish-system.js');
