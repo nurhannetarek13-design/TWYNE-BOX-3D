@@ -6,6 +6,7 @@ set "REPO_URL=https://github.com/nurhannetarek13-design/TWYNE-BOX-3D.git"
 set "TARGET=%USERPROFILE%\Documents\TWYNE-FIGMA-LIVE"
 set "TASK_NAME=TWYNE Figma Auto Update"
 set "GITEXE=git"
+set "LOG=%TARGET%\figma-giftset-direct\AUTO_UPDATE_LOG.txt"
 
 where git >nul 2>&1
 if not errorlevel 1 goto git_ready
@@ -54,28 +55,36 @@ if not exist "%TARGET%\figma-giftset-direct\manifest.json" goto missing_file
 if not exist "%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd" goto missing_file
 
 echo.
-echo Creating automatic update task every 5 minutes...
+echo Creating automatic update task every 1 minute...
 schtasks /Delete /TN "%TASK_NAME%" /F >nul 2>&1
-schtasks /Create /TN "%TASK_NAME%" /TR "\"%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd\"" /SC MINUTE /MO 5 /F
+schtasks /Create /TN "%TASK_NAME%" /TR "cmd.exe /d /c call ^"%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd^"" /SC MINUTE /MO 1 /F
 if errorlevel 1 goto task_error
 
-call "%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd"
+if exist "%LOG%" del /q "%LOG%"
+schtasks /Run /TN "%TASK_NAME%" >nul 2>&1
+timeout /t 5 /nobreak >nul
+
+if not exist "%LOG%" goto verify_error
+findstr /C:"SUCCESS - Synced to origin/main" "%LOG%" >nul
+if errorlevel 1 goto verify_error
 
 echo.
 echo ==============================================
-echo DONE - AUTO UPDATE IS ACTIVE
+echo DONE - AUTO UPDATE IS VERIFIED AND ACTIVE
 echo ==============================================
 echo.
-echo You will not need to download ZIP files again.
-echo GitHub changes will sync to this computer every 5 minutes.
+echo GitHub changes will sync to this computer every 1 minute.
+echo You do NOT need to download ZIP files again.
+echo You do NOT need to import the manifest again.
+echo Just re-run the TWYNE plugin in Figma after a sync.
 echo.
-echo ONE LAST FIGMA STEP:
-echo Import this manifest once from the permanent live folder:
+echo Live manifest:
 echo %TARGET%\figma-giftset-direct\manifest.json
 echo.
-echo Opening that file location now...
-explorer.exe /select,"%TARGET%\figma-giftset-direct\manifest.json"
+echo Update log:
+echo %LOG%
 echo.
+explorer.exe /select,"%TARGET%\figma-giftset-direct\manifest.json"
 pause
 exit /b 0
 
@@ -83,7 +92,6 @@ exit /b 0
 echo.
 echo GitHub could not clone or update the private repository.
 echo Open GitHub Desktop and make sure you are signed in to the account that owns TWYNE-BOX-3D.
-echo Then run this setup file again.
 pause
 exit /b 1
 
@@ -103,5 +111,14 @@ exit /b 1
 echo.
 echo Windows could not create the automatic update task.
 echo Right-click this setup file and choose Run as administrator, then try again.
+pause
+exit /b 1
+
+:verify_error
+echo.
+echo The task was created, but Windows did not run the updater correctly.
+echo Open this file and send me what it says:
+echo %LOG%
+echo.
 pause
 exit /b 1
