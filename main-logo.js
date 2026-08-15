@@ -57,8 +57,6 @@ function makeExactWordmarkDebossMaterial(depth = 1) {
   });
 }
 
-// Dedicated pedestal wordmark: the existing empty gaps are removed completely.
-// Each next letter begins exactly where the previous letter's visible bounds end.
 function makeTightBaseWordmarkDebossMaterial(depth = 1) {
   const cv = document.createElement('canvas');
   cv.width = 2048;
@@ -68,8 +66,6 @@ function makeTightBaseWordmarkDebossMaterial(depth = 1) {
   ctx.clearRect(0, 0, cv.width, cv.height);
 
   const paths = EXACT_TWYNE_PATHS.map(d => new Path2D(d));
-  // Shifts derived from the actual visible bounds of T / W / Y / N / E.
-  // Result: zero tracking/gap, no overlap, no change to any letter silhouette.
   const shifts = [0, 176, 348, 534, 732];
   const compactMinX = 1;
   const compactSourceW = 1131;
@@ -124,8 +120,8 @@ function makeSizeCopyMaterial() {
   ctx.font = '400 72px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
   if ('letterSpacing' in ctx) ctx.letterSpacing = '9px';
 
-  // Match the restrained tonal hierarchy of the other box typography.
-  ctx.fillStyle = 'rgba(226,223,215,0.34)';
+  // Dark tonal ink to match the current supporting typography system.
+  ctx.fillStyle = 'rgba(7,7,6,0.74)';
   nativeFillText.call(ctx, '50 ML / 1.7 FL. OZ.', cv.width / 2, cv.height / 2);
 
   const tex = new THREE.CanvasTexture(cv);
