@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // Front typography inspired by the quiet Dries Van Noten discovery-set hierarchy:
-// small neo-grotesk caps, generous tracking, flat tonal print.
+// neo-grotesk caps, generous tracking, flat tonal print — but large enough to read clearly.
 // Replaces the previous separate VOLUME I / KENOPSIA treatment on the front only.
 const nativeGroupAdd = THREE.Group.prototype.add;
 const nativeFillText = CanvasRenderingContext2D.prototype.fillText;
@@ -16,16 +16,16 @@ function makeCollectionPairMaterial() {
   ctx.textBaseline = 'middle';
   ctx.fontKerning = 'normal';
 
-  // Reliable on-screen equivalent to the Helvetica Neue / Neue Haas Grotesk feel.
-  ctx.font = '400 50px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '12px';
-  ctx.fillStyle = 'rgba(210,207,198,0.46)';
-  nativeFillText.call(ctx, 'VOLUME I — KENOPSIA', cv.width / 2, 150);
+  // Same house neo-grotesk used across the box. Increased size + contrast for legibility.
+  ctx.font = '400 86px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '11px';
+  ctx.fillStyle = 'rgba(220,217,208,0.72)';
+  nativeFillText.call(ctx, 'VOLUME I — KENOPSIA', cv.width / 2, 142);
 
-  ctx.font = '400 40px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '10px';
-  ctx.fillStyle = 'rgba(210,207,198,0.42)';
-  nativeFillText.call(ctx, 'EAU DE PARFUM', cv.width / 2, 285);
+  ctx.font = '400 62px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '9px';
+  ctx.fillStyle = 'rgba(220,217,208,0.66)';
+  nativeFillText.call(ctx, 'EAU DE PARFUM', cv.width / 2, 294);
 
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -44,12 +44,12 @@ function addCollectionPair(parent, anchorMesh) {
   if (parent.userData.hasDvnCollectionPair) return;
 
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(56, 9.4),
+    new THREE.PlaneGeometry(68, 14.2),
     makeCollectionPairMaterial()
   );
   mesh.position.copy(anchorMesh.position);
   mesh.position.x = 0;
-  mesh.position.y -= 0.4;
+  mesh.position.y -= 0.2;
   mesh.position.z += 0.014;
   mesh.rotation.copy(anchorMesh.rotation);
   mesh.renderOrder = 37;
