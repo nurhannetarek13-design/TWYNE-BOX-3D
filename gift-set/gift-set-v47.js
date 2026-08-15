@@ -112,7 +112,7 @@ THREE.Group.prototype.add=function(...os){
   return A.apply(this,os);
 };
 
-await import('./gift-set-v36.js?build=57');
+await import('./gift-set-v36.js?build=58');
 THREE.Group.prototype.add=A;
 
 const gm=graphiteMap();
@@ -134,7 +134,7 @@ if(R.vol) R.vol.visible=false;
 if(R.eau) R.eau.visible=false;
 
 if(R.logo){
-  const newLogoTex=new THREE.TextureLoader().load('../assets/twyne-wordmark-new-cream.svg?v=57');
+  const newLogoTex=new THREE.TextureLoader().load('../assets/twyne-wordmark-new-cream.svg?v=58');
   newLogoTex.colorSpace=THREE.SRGBColorSpace;
   newLogoTex.minFilter=THREE.LinearFilter;
   newLogoTex.magFilter=THREE.LinearFilter;
@@ -183,9 +183,9 @@ function addEditorialText(text,w,z,fs,tr,ord){
   R.sg?.add(mesh);
 }
 
-// Slightly larger than v56, while staying clearly smaller than the TWYNE wordmark.
-addEditorialText('VOLUME I — KENOPSIA',54,30.6,92,12,1);
-addEditorialText('EAU DE PARFUM',34,37.8,72,5,2);
+// Larger again, while remaining subordinate to the 74 mm TWYNE wordmark.
+addEditorialText('VOLUME I — KENOPSIA',60,30.6,102,12,1);
+addEditorialText('EAU DE PARFUM',38,37.8,80,5,2);
 
 R.labels.forEach((l,i)=>styleTesterLabel(l,i));
 
