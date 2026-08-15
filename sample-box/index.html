@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TWYNE — Matching Sample Box</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="sample-box.css" />
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <aside id="panel">
+    <div class="eyebrow">TWYNE</div>
+    <h1>MATCHING SAMPLE</h1>
+    <p class="subtitle">2ML SAMPLE BOX — 3D STUDY</p>
+
+    <div class="section-label">Structure</div>
+    <div class="spec-grid">
+      <div><span>H</span><strong>75 mm</strong></div>
+      <div><span>W</span><strong>28 mm</strong></div>
+      <div><span>D</span><strong>16 mm</strong></div>
+    </div>
+
+    <div class="material-card">
+      <span class="swatch cream"></span>
+      <div>
+        <strong>Cream uncoated carton</strong>
+        <small>#ECE8DF · matte / tactile</small>
+      </div>
+    </div>
+
+    <div class="section-label">Open / close</div>
+    <label class="slider-label">
+      <span>Closed</span>
+      <input id="ctrl-open" type="range" min="0" max="1" step="0.01" value="0.72" />
+      <span>Open</span>
+    </label>
+
+    <div class="section-label">View</div>
+    <div class="camera-grid">
+      <button id="cam-3q" class="ui-btn active">3/4</button>
+      <button id="cam-front" class="ui-btn">Front</button>
+      <button id="cam-back" class="ui-btn">Back</button>
+      <button id="cam-top" class="ui-btn">Top</button>
+    </div>
+
+    <div class="section-label">Artwork</div>
+    <div class="copy-block">
+      <strong>FRONT</strong>
+      <span>TWYNE only</span>
+      <strong>BACK</strong>
+      <span>SOTTO VOCE · 2ml</span>
+      <span>WEAR THIS FIRST.</span>
+      <span>Open the 50ml only when you're sure.</span>
+    </div>
+
+    <button id="btn-render" class="ui-btn full">RENDER PNG</button>
+    <p class="note">Matching 2ml sample · folding carton · v1</p>
+  </aside>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="sample-box.js?v=1"></script>
+</body>
+</html>
