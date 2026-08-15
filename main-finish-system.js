@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 
 // FINAL TWYNE FINISH SYSTEM
-// TOP + BASE: TRUE 3D blind emboss using the approved TWYNE vector artwork.
-// The raised mark is real geometry and therefore exports into the GLB.
+// TOP + BASE: subtle BLIND DEBOSS, graphite-on-graphite.
+// No raised extrusion, no ink, no foil. The mark reads through a shallow
+// recessed edge response only, matching a ~0.22 mm production deboss intent.
 
 const EXACT_TWYNE_PATHS = [
   'M1 3L2 18L30 15L82 15L84 17L84 191L82 200L111 201L112 199L110 189L110 17L115 15L162 15L195 18L196 4Z',
@@ -16,92 +16,88 @@ const EXACT_TWYNE_PATHS = [
 const sourceW = 1834;
 const sourceH = 204;
 const LOGO_W = 72;
-const EMBOSS_HEIGHT = 0.40; // mm of true raised geometry
+const LOGO_H = LOGO_W * (sourceH / sourceW);
 const nativeGroupAdd = THREE.Group.prototype.add;
 
-const embossMaterial = new THREE.MeshStandardMaterial({
-  color: 0x4d4d49,
-  roughness: 0.90,
-  metalness: 0,
-  side: THREE.DoubleSide,
-});
+function drawBlindDebossTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = 2048;
+  cv.height = 300;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
 
-function buildEmbossGeometryGroup() {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sourceW} ${sourceH}">${EXACT_TWYNE_PATHS.map(d => `<path d="${d}" fill="#000"/>`).join('')}</svg>`;
-  const parsed = new SVGLoader().parse(svg);
-  const group = new THREE.Group();
-  const xyScale = LOGO_W / sourceW;
+  const paths = EXACT_TWYNE_PATHS.map(d => new Path2D(d));
+  const targetW = 1840;
+  const scale = targetW / sourceW;
+  const markH = sourceH * scale;
+  const ox = (cv.width - targetW) / 2;
+  const oy = (cv.height - markH) / 2;
 
-  for (const path of parsed.paths) {
-    const shapes = SVGLoader.createShapes(path);
-    for (const shape of shapes) {
-      const geometry = new THREE.ExtrudeGeometry(shape, {
-        depth: EMBOSS_HEIGHT,
-        steps: 1,
-        curveSegments: 2,
-        bevelEnabled: true,
-        bevelSegments: 1,
-        bevelThickness: 0.045,
-        // bevelSize is in source SVG units before the XY scale below.
-        bevelSize: 1.15,
-      });
-
-      // Centre the supplied artwork, preserve its exact proportions, and flip SVG Y.
-      // Z remains in millimetres so the 0.40 mm emboss height is physically real.
-      geometry.translate(-sourceW / 2, -sourceH / 2, 0);
-      geometry.scale(xyScale, -xyScale, 1);
-      geometry.computeVertexNormals();
-
-      const part = new THREE.Mesh(geometry, embossMaterial.clone());
-      part.castShadow = true;
-      part.receiveShadow = true;
-      part.userData.isTrueEmbossPart = true;
-      nativeGroupAdd.call(group, part);
-    }
+  function draw(dx, dy, fill) {
+    ctx.save();
+    ctx.translate(ox + dx, oy + dy);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = fill;
+    paths.forEach(path => ctx.fill(path));
+    ctx.restore();
   }
 
-  group.userData.isTrueTwyneEmboss = true;
-  group.userData.embossHeightMM = EMBOSS_HEIGHT;
-  group.userData.logoWidthMM = LOGO_W;
-  return group;
+  // Recessed edge logic: invert the old emboss lighting.
+  // A restrained pale upper-left inner edge + darker lower-right inner edge
+  // makes the mark read as pressed INTO the wrap, not sitting on top of it.
+  draw(-1.8, -1.8, 'rgba(232,230,223,0.105)');
+  draw(1.9, 1.9, 'rgba(0,0,0,0.28)');
+
+  // Centre stays almost the same graphite as the paper: no printed fill.
+  draw(0, 0, 'rgba(53,53,50,0.16)');
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
 }
 
-function applyTrueEmboss(mesh) {
-  if (!mesh?.isMesh || !mesh.userData?.isExactTwyneLogo || mesh.userData.trueEmbossApplied) return;
+const sharedDebossTexture = drawBlindDebossTexture();
+
+function makeDebossMaterial() {
+  return new THREE.MeshBasicMaterial({
+    map: sharedDebossTexture,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
+
+function applyBlindDeboss(mesh) {
+  if (!mesh?.isMesh || !mesh.userData?.isExactTwyneLogo) return;
 
   const isBase = !!mesh.userData.isExactTwyneBaseLogo;
   const isTop = !isBase && Math.abs(mesh.rotation.x + Math.PI / 2) < 0.08;
   if (!isTop && !isBase) return;
 
-  const parent = mesh.parent;
-  if (!parent) return;
+  // Keep the exact approved artwork and proportions on both faces.
+  mesh.geometry?.dispose?.();
+  mesh.geometry = new THREE.PlaneGeometry(LOGO_W, LOGO_H);
+  mesh.material = makeDebossMaterial();
 
-  const emboss = buildEmbossGeometryGroup();
-  emboss.position.copy(mesh.position);
-  emboss.rotation.copy(mesh.rotation);
-  emboss.scale.copy(mesh.scale);
-
-  // Tiny surface clearance prevents z-fighting while the extrusion itself rises 0.40 mm.
   if (isTop) {
-    emboss.position.y += 0.012;
-    emboss.renderOrder = 60;
+    // Almost flush with the lid: no raised silhouette from side angles.
+    mesh.position.y += 0.004;
+    mesh.renderOrder = 50;
   } else {
-    emboss.position.x = 0;
-    emboss.position.y = 8.0;
-    emboss.position.z += 0.012;
-    emboss.renderOrder = 61;
+    mesh.position.x = 0;
+    mesh.position.y = 8.0;
+    mesh.position.z += 0.004;
+    mesh.renderOrder = 51;
   }
 
-  emboss.userData.face = isTop ? 'top' : 'base-front';
-  emboss.userData.finish = 'true-3d-blind-emboss';
-  emboss.userData.wordmarkVersion = 'TWYNE-new-2026-08-15';
-
-  nativeGroupAdd.call(parent, emboss);
-
-  // Remove the old flat simulated emboss from view; geometry remains only as a source anchor.
-  mesh.visible = false;
-  mesh.userData.trueEmbossApplied = true;
-  mesh.userData.finish = 'replaced-by-true-3d-blind-emboss';
+  mesh.visible = true;
+  mesh.userData.finish = 'subtle-blind-deboss';
+  mesh.userData.productionDebossDepthMM = 0.22;
+  mesh.userData.isRaisedGeometry = false;
+  mesh.userData.matchesTopExactly = true;
+  mesh.userData.wordmarkVersion = 'TWYNE-new-2026-08-15';
 }
 
 THREE.Group.prototype.add = function(...objects) {
@@ -109,10 +105,8 @@ THREE.Group.prototype.add = function(...objects) {
 
   for (const obj of objects) {
     if (!obj?.isMesh || !obj.userData?.isExactTwyneLogo) continue;
-
-    // Let the legacy placement wrappers finish first, then replace the visual plane
-    // with real raised geometry at the final approved position.
-    queueMicrotask(() => applyTrueEmboss(obj));
+    // Let all legacy placement wrappers unwind, then enforce the final finish.
+    queueMicrotask(() => applyBlindDeboss(obj));
   }
 
   return result;
