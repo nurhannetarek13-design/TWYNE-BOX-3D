@@ -1,0 +1,11 @@
+{
+  "name": "TWYNE — CREATE GIFT SET INSERT",
+  "id": "1598364271058846002",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
+}
