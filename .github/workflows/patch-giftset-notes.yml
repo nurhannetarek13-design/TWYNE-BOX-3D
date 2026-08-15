@@ -1,0 +1,82 @@
+name: Patch Gift Set Notes
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[giftset-notes-patched]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Make notes visible and match Aoyama-style typography
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('figma-giftset-direct/code.js')
+          s = path.read_text(encoding='utf-8')
+
+          old = """    text(parent, p.name, mm(leftMM), mm(162), mm(groupWidthMM), mm(8), {
+      size: 6.7, bold: true, align: 'CENTER', tracking: 0.25
+    });
+    text(parent, p.notes, mm(leftMM), mm(172), mm(groupWidthMM), mm(13), {
+      size: 5.2, align: 'CENTER', color: MUTED, lineHeight: 6.4
+    });"""
+
+          new = """    text(parent, p.name, mm(leftMM), mm(160), mm(groupWidthMM), mm(8), {
+      size: 6.6, align: 'CENTER', color: INK, tracking: 1.05
+    });
+    text(parent, p.notes.toUpperCase(), mm(leftMM - 1), mm(170), mm(groupWidthMM + 2), mm(10), {
+      size: 6.1, align: 'CENTER', color: INK, tracking: 0.62, lineHeight: 7.4
+    });"""
+
+          if old not in s:
+              raise SystemExit('Expected bottle text block not found; refusing to patch blindly.')
+          s = s.replace(old, new, 1)
+
+          old_guide = """  text(sheet, 'SOTTO VOCE        LOW FEVER        LACUNA        PALE HUM', mm(10), mm(163), mm(166), mm(8), {
+    size: 5.6, align: 'CENTER', tracking: 0.2
+  });"""
+
+          new_guide = """  text(sheet, 'SOTTO VOCE        LOW FEVER        LACUNA        PALE HUM', mm(10), mm(160), mm(166), mm(8), {
+    size: 5.9, align: 'CENTER', tracking: 0.75
+  });
+  text(sheet, 'SUEDE · VANILLA · AMBER     AMBER · CEDAR · MUSK     IRIS · SPICE · AIR     WHITE MUSK · SOFT CITRUS · SKIN', mm(6), mm(171), mm(174), mm(10), {
+    size: 4.7, align: 'CENTER', color: INK, tracking: 0.35, lineHeight: 6
+  });"""
+
+          if old_guide not in s:
+              raise SystemExit('Expected production guide text block not found; refusing to patch blindly.')
+          s = s.replace(old_guide, new_guide, 1)
+
+          s = s.replace(
+              "figma.closePlugin('TWYNE Gift Set insert updated — creamy paper + wider bottle spacing');",
+              "figma.closePlugin('TWYNE Gift Set insert updated — visible notes + Aoyama-style tracked typography');"
+          )
+
+          path.write_text(s, encoding='utf-8')
+          PY
+
+          node --check figma-giftset-direct/code.js
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git config user.name "TWYNE Auto Patch"
+          git config user.email "actions@users.noreply.github.com"
+          git add figma-giftset-direct/code.js
+          git commit -m "Gift Set: visible notes + Aoyama-style typography [giftset-notes-patched]"
+          git push origin main
