@@ -4,9 +4,9 @@ title TWYNE Figma Auto Update Setup
 
 set "REPO_URL=https://github.com/nurhannetarek13-design/TWYNE-BOX-3D.git"
 set "TARGET=%USERPROFILE%\Documents\TWYNE-FIGMA-LIVE"
-set "TASK_NAME=TWYNE Figma Auto Update"
 set "GITEXE=git"
 set "LOG=%TARGET%\figma-giftset-direct\AUTO_UPDATE_LOG.txt"
+set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 
 where git >nul 2>&1
 if not errorlevel 1 goto git_ready
@@ -53,20 +53,25 @@ if errorlevel 1 goto sync_error
 :after_sync
 if not exist "%TARGET%\figma-giftset-direct\manifest.json" goto missing_file
 if not exist "%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd" goto missing_file
+if not exist "%TARGET%\figma-giftset-direct\TWYNE_LIVE_SYNC.cmd" goto missing_file
+if not exist "%TARGET%\figma-giftset-direct\START_TWYNE_SYNC.vbs" goto missing_file
 
 echo.
-echo Creating automatic update task every 1 minute...
-schtasks /Delete /TN "%TASK_NAME%" /F >nul 2>&1
-schtasks /Create /TN "%TASK_NAME%" /TR "cmd.exe /d /c call ^"%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd^"" /SC MINUTE /MO 1 /F
-if errorlevel 1 goto task_error
-
+echo Verifying GitHub sync now...
 if exist "%LOG%" del /q "%LOG%"
-schtasks /Run /TN "%TASK_NAME%" >nul 2>&1
-timeout /t 5 /nobreak >nul
-
+call "%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd"
+if errorlevel 1 goto verify_error
 if not exist "%LOG%" goto verify_error
 findstr /C:"SUCCESS - Synced to origin/main" "%LOG%" >nul
 if errorlevel 1 goto verify_error
+
+echo Installing hidden auto-start updater...
+copy /Y "%TARGET%\figma-giftset-direct\START_TWYNE_SYNC.vbs" "%STARTUP%\TWYNE_FIGMA_AUTO_UPDATE.vbs" >nul
+if errorlevel 1 goto startup_error
+
+echo Starting live sync now...
+wscript.exe "%STARTUP%\TWYNE_FIGMA_AUTO_UPDATE.vbs"
+timeout /t 2 /nobreak >nul
 
 echo.
 echo ==============================================
@@ -103,20 +108,20 @@ exit /b 1
 
 :missing_file
 echo.
-echo The repository downloaded, but the Figma plugin files are missing.
+echo The repository downloaded, but one or more updater files are missing.
 pause
 exit /b 1
 
-:task_error
+:startup_error
 echo.
-echo Windows could not create the automatic update task.
-echo Right-click this setup file and choose Run as administrator, then try again.
+echo Windows could not install the hidden startup updater.
+echo Send me a screenshot of this window.
 pause
 exit /b 1
 
 :verify_error
 echo.
-echo The task was created, but Windows did not run the updater correctly.
+echo GitHub sync verification failed.
 echo Open this file and send me what it says:
 echo %LOG%
 echo.
