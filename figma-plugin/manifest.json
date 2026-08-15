@@ -1,0 +1,12 @@
+{
+  "name": "TWYNE Production Tools",
+  "id": "1598364271058846001",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
+}
