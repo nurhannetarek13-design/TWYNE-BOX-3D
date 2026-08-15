@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      font-family: Inter, Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: var(--figma-color-bg, #ffffff);
+      color: var(--figma-color-text, #111111);
+    }
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 1.6px;
+      opacity: .58;
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      letter-spacing: 2px;
+      font-weight: 650;
+    }
+    p {
+      margin: 0 0 20px;
+      font-size: 12px;
+      line-height: 1.5;
+      opacity: .68;
+    }
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      background: var(--figma-color-bg-brand, #111111);
+      color: var(--figma-color-text-onbrand, #ffffff);
+    }
+    button.secondary {
+      background: var(--figma-color-bg-secondary, #efefef);
+      color: var(--figma-color-text, #111111);
+    }
+    .status {
+      min-height: 18px;
+      margin-top: 4px;
+      font-size: 11px;
+      line-height: 1.4;
+      opacity: .72;
+    }
+    .status.error {
+      color: #b42318;
+      opacity: 1;
+    }
+    .spec {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--figma-color-border, #dddddd);
+      font-size: 10px;
+      line-height: 1.55;
+      opacity: .56;
+    }
+  </style>
+</head>
+<body>
+  <div class="eyebrow">TWYNE</div>
+  <h1>PRODUCTION TOOLS</h1>
+  <p>Create the current packaging print layouts directly in the open Figma file.</p>
+
+  <button id="gift">CREATE GIFT SET INSERT</button>
+  <button id="sotto">CREATE SOTTO VOCE 50ML CARD</button>
+  <button id="close" class="secondary">CLOSE</button>
+
+  <div id="status" class="status"></div>
+
+  <div class="spec">
+    Gift Set insert: 186 × 208 mm open / 186 × 104 mm folded / fold at 104 mm / creamy #E7E4DD.
+  </div>
+
+  <script>
+    const status = document.getElementById('status');
+
+    document.getElementById('gift').onclick = () => {
+      status.textContent = 'Creating Gift Set insert…';
+      status.className = 'status';
+      parent.postMessage({ pluginMessage: { type: 'create-gift-set-insert' } }, '*');
+    };
+
+    document.getElementById('sotto').onclick = () => {
+      status.textContent = 'Creating SOTTO VOCE card…';
+      status.className = 'status';
+      parent.postMessage({ pluginMessage: { type: 'create-sotto-card' } }, '*');
+    };
+
+    document.getElementById('close').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+    };
+
+    onmessage = (event) => {
+      const message = event.data.pluginMessage;
+      if (!message || message.type !== 'status') return;
+      status.textContent = message.text;
+      status.className = message.isError ? 'status error' : 'status';
+    };
+  </script>
+</body>
+</html>
