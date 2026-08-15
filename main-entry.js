@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 
-// TWYNE typography rule: sans-serif only across the entire house system.
-// Inter Tight is the supporting face; Space Grotesk is reserved for volume titles.
+// TWYNE house typography — ONE supporting face everywhere.
+// Every canvas-rendered supporting label is forced to Inter Tight 400,
+// regardless of which legacy module/direction originally created it.
 const supportingFontLink = document.createElement('link');
 supportingFontLink.rel = 'stylesheet';
-supportingFontLink.href = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap';
+supportingFontLink.href = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400&display=swap';
 document.head.appendChild(supportingFontLink);
 
 const canvasFontDescriptor = Object.getOwnPropertyDescriptor(
@@ -18,18 +19,13 @@ if (canvasFontDescriptor?.set && canvasFontDescriptor?.get) {
     enumerable: canvasFontDescriptor.enumerable,
     get() { return canvasFontDescriptor.get.call(this); },
     set(value) {
-      let next = String(value)
-        // Main supporting copy: remove all serif families from the visible system.
-        .replace(/\"Bodoni Moda\",\s*Didot,\s*\"Times New Roman\",\s*serif/g, '\"Inter Tight\", \"Helvetica Neue\", Helvetica, Arial, sans-serif')
-        // Volume title: keep a distinct display voice, but still strictly sans-serif.
-        .replace(/\"Cormorant Garamond\",\s*Georgia,\s*serif/g, '\"Space Grotesk\", \"Inter Tight\", \"Helvetica Neue\", Helvetica, Arial, sans-serif')
-        // Safety net: no visible fallback may resolve to a serif face.
-        .replace(/\bDidot\b/g, 'Helvetica')
-        .replace(/\"Times New Roman\"/g, 'Arial')
-        .replace(/\bGeorgia\b/g, 'Arial')
-        .replace(/,\s*serif\b/g, ', sans-serif')
-        .replace(/^500\s+/, '400 ');
-      canvasFontDescriptor.set.call(this, next);
+      const raw = String(value);
+      const sizeMatch = raw.match(/(\d+(?:\.\d+)?)px/);
+      const size = sizeMatch ? sizeMatch[1] : '88';
+      canvasFontDescriptor.set.call(
+        this,
+        `400 ${size}px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif`
+      );
     },
   });
 }
@@ -104,9 +100,8 @@ THREE.Vector3.prototype.set = function(x, y, z) {
   return originalVectorSet.call(this, x, y, z);
 };
 
-// Supporting box copy is FLAT tonal print. Only the TWYNE wordmark keeps the
-// blind-deboss treatment (it is drawn separately with vector paths in main-logo.js).
-// KENOPSIA gets noticeably wider tracking than the rest of the system.
+// Supporting box copy is FLAT tonal print. Only the TWYNE wordmark keeps its
+// separate custom vector/emboss system.
 const originalFillText = CanvasRenderingContext2D.prototype.fillText;
 CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
   const replacements = {
@@ -117,9 +112,7 @@ CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
   const resolvedText = replacements[text] ?? text;
   const fill = String(this.fillStyle ?? '');
 
-  // main-v2 simulates deboss with a pale highlight pass + dark offset shadow pass.
-  // Suppress those passes for all type rendered with fillText, leaving only the
-  // centred tonal ink pass. The custom TWYNE vector mark is unaffected.
+  // Suppress legacy fake-deboss highlight/shadow passes for supporting copy.
   const isDebossHighlightPass = fill.startsWith('rgba(246,246,239,');
   const isDebossShadowPass = fill.startsWith('rgba(0,0,0,');
   if (isDebossHighlightPass || isDebossShadowPass) return;
@@ -130,8 +123,8 @@ CanvasRenderingContext2D.prototype.fillText = function(text, ...args) {
   if (hasSpacing) {
     const current = parseFloat(previousSpacing) || 0;
     this.letterSpacing = resolvedText === 'KENOPSIA'
-      ? '20px'
-      : `${Math.max(11, current * 1.85)}px`;
+      ? '10px'
+      : `${Math.max(7, current * 1.25)}px`;
   }
 
   const result = originalFillText.call(this, resolvedText, ...args);
@@ -152,15 +145,15 @@ function makeMicroTextMaterial(lines) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fontKerning = 'normal';
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '9px';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '8px';
 
   const lineH = 82;
   const y0 = cv.height / 2 - ((lines.length - 1) * lineH) / 2;
 
   lines.forEach((line, i) => {
     const y = y0 + i * lineH;
-    ctx.font = `${i === 0 ? 500 : 400} ${i === 0 ? 60 : 48}px \"Inter Tight\", \"Helvetica Neue\", Helvetica, Arial, sans-serif`;
-    ctx.fillStyle = i === 0 ? 'rgba(7,7,6,0.68)' : 'rgba(7,7,6,0.48)';
+    ctx.font = `400 ${i === 0 ? 60 : 48}px "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle = i === 0 ? 'rgba(7,7,6,0.68)' : 'rgba(7,7,6,0.54)';
     ctx.fillText(line, cv.width / 2, y);
   });
 
@@ -264,9 +257,6 @@ function addFilmFrame(lidGroup, lidSize) {
   lidGroup.add(meta);
 }
 
-// Sora Dora-style protective rim: the raised part sits near the OUTER EDGE of the
-// base, not around the bottle. The entire field between the bottle and the rim stays
-// empty so future TWYNE objects/cards/accessories can sit around the bottle.
 function addRaisedBaseTray(parent, baseMesh, baseSize) {
   const rimOuterW = 84;
   const rimOuterD = 84;
@@ -298,8 +288,6 @@ function addRaisedBaseTray(parent, baseMesh, baseSize) {
   }
 }
 
-// Lower the bottle independently of the protective rim. The rim is only a guard
-// at the base perimeter; it never supports, grips, or determines bottle position.
 function lowerBottleIndependentOfRim(obj, size) {
   if (!obj?.isMesh || obj.userData?.isRaisedBaseTray) return;
 
@@ -361,9 +349,7 @@ THREE.Group.prototype.add = function(...objects) {
   return result;
 };
 
-await document.fonts?.load?.('400 90px "Inter Tight"');
-await document.fonts?.load?.('500 90px "Inter Tight"');
-await document.fonts?.load?.('400 120px "Space Grotesk"');
+await document.fonts?.load?.('400 96px "Inter Tight"');
 await document.fonts?.ready;
 await import('./main-v2.js');
 
