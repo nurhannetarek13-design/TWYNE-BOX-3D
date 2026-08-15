@@ -3,15 +3,15 @@ import * as THREE from 'three';
 // TWYNE HOUSE TYPOGRAPHY CONTROLLER
 // FRONT: VOLUME I / KENOPSIA only
 // SIDES: product + house details
-// All supporting copy uses one neo-grotesk sans system: Inter Tight, regular,
-// generous but controlled tracking, readable tonal contrast, flat print.
-// The custom TWYNE wordmark / emboss system is intentionally untouched.
+// BACK: film metadata follows the exact same house typography system
+// All supporting copy uses Inter Tight, regular weight, controlled tracking,
+// DARK tonal ink and flat print. The custom TWYNE emboss system is untouched.
 const nativeGroupAdd = THREE.Group.prototype.add;
 const nativeFillText = CanvasRenderingContext2D.prototype.fillText;
 
 const HOUSE_FONT = '"Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif';
-const HOUSE_INK = 'rgba(220,217,208,0.70)';
-const HOUSE_INK_SOFT = 'rgba(220,217,208,0.62)';
+const HOUSE_INK = 'rgba(7,7,6,0.74)';
+const HOUSE_INK_SOFT = 'rgba(7,7,6,0.58)';
 
 function makeHouseTextMaterial(text, {
   fontSize = 78,
@@ -35,6 +35,42 @@ function makeHouseTextMaterial(text, {
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.needsUpdate = true;
 
+  return new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+}
+
+function makeBackMetaMaterial() {
+  const cv = document.createElement('canvas');
+  cv.width = 1600;
+  cv.height = 360;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fontKerning = 'normal';
+
+  const lines = [
+    ['VOLUME I — KENOPSIA', 62, 9, HOUSE_INK],
+    ['FILM 01 / FRAME 0047', 52, 8, HOUSE_INK_SOFT],
+    ['TWYNEHAUS.COM', 52, 8, HOUSE_INK_SOFT],
+  ];
+  const ys = [90, 180, 270];
+
+  lines.forEach(([text, size, tracking, fill], i) => {
+    ctx.font = `400 ${size}px ${HOUSE_FONT}`;
+    if ('letterSpacing' in ctx) ctx.letterSpacing = `${tracking}px`;
+    ctx.fillStyle = fill;
+    nativeFillText.call(ctx, text, cv.width / 2, ys[i]);
+  });
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
   return new THREE.MeshBasicMaterial({
     map: tex,
     transparent: true,
@@ -72,7 +108,6 @@ function addHouseText(parent, text, anchor, {
   if (ry !== undefined) mesh.rotation.y = ry;
   if (rz !== undefined) mesh.rotation.z = rz;
 
-  // Sit just above the original face to avoid z-fighting.
   if (Math.abs(mesh.rotation.y) < 0.08) mesh.position.z += 0.018;
   else mesh.position.x += Math.sign(mesh.position.x || 1) * 0.018;
 
@@ -106,11 +141,21 @@ THREE.Group.prototype.add = function(...objects) {
     const p = obj.geometry.parameters;
     if (!p) continue;
 
+    // ---------- BACK ----------
+    // Keep the film image/inset; only harmonise the metadata typography below it.
+    if (obj.userData?.isFilmMeta) {
+      obj.material?.dispose?.();
+      obj.material = makeBackMetaMaterial();
+      obj.material.needsUpdate = true;
+      obj.userData.isHouseTypography = true;
+      obj.userData.houseTypographyTag = 'back-film-meta';
+      continue;
+    }
+
     const w = p.width ?? 0;
     const h = p.height ?? 0;
 
     // ---------- FRONT ----------
-    // VOLUME I: small, clear, house sans.
     if (isFront(obj) && w >= 38 && w <= 40 && h >= 7 && h <= 8) {
       obj.visible = false;
       addHouseText(this, 'VOLUME I', obj, {
@@ -124,7 +169,6 @@ THREE.Group.prototype.add = function(...objects) {
       continue;
     }
 
-    // KENOPSIA: separate second line, larger than VOLUME I but same font family.
     if (isFront(obj) && w >= 51 && w <= 53 && h >= 9 && h <= 11) {
       obj.visible = false;
       addHouseText(this, 'KENOPSIA', obj, {
@@ -138,14 +182,12 @@ THREE.Group.prototype.add = function(...objects) {
       continue;
     }
 
-    // Remove size from the front. It belongs with the side details.
     if (isFront(obj) && w >= 41 && w <= 43 && h >= 5 && h <= 6) {
       obj.visible = false;
       continue;
     }
 
     // ---------- LEFT SIDE ----------
-    // House line + size detail, same type system.
     if (isLeftSide(obj) && w >= 61 && w <= 63 && h >= 8 && h <= 10) {
       obj.visible = false;
 
@@ -172,7 +214,6 @@ THREE.Group.prototype.add = function(...objects) {
     }
 
     // ---------- RIGHT SIDE ----------
-    // Keep the state system, but redraw all three details in the exact same house face.
     if (isRightSide(obj) && w >= 41 && w <= 43 && h >= 6 && h <= 7) {
       obj.visible = false;
       addHouseText(this, 'STATE I', obj, {
