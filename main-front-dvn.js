@@ -2,7 +2,8 @@ import * as THREE from 'three';
 
 // TWYNE HOUSE TYPOGRAPHY CONTROLLER
 // FRONT: VOLUME I / KENOPSIA only
-// SIDES: product + house details
+// LEFT SIDE: A HAUS OF VOLUMES only
+// RIGHT SIDE: product/state details
 // BACK: film metadata follows the exact same house typography system
 // All supporting copy uses the SAME Dries-reference equivalent used before:
 // Inter Tight 400 / Helvetica Neue fallback, controlled tracking, DARK tonal ink.
@@ -15,7 +16,6 @@ const HOUSE_INK = 'rgba(7,7,6,0.74)';
 const HOUSE_INK_SOFT = 'rgba(7,7,6,0.58)';
 
 // Load the exact house face BEFORE any canvas text texture is generated.
-// This prevents the browser from silently baking Helvetica/Arial fallback into the 3D textures.
 if (!document.querySelector('link[data-twyne-house-font="inter-tight"]')) {
   const houseFontLink = document.createElement('link');
   houseFontLink.rel = 'stylesheet';
@@ -198,28 +198,25 @@ THREE.Group.prototype.add = function(...objects) {
     }
 
     // ---------- LEFT SIDE ----------
+    // This face is intentionally strict: ONE line only, centered.
     if (isLeftSide(obj) && w >= 61 && w <= 63 && h >= 8 && h <= 10) {
       obj.visible = false;
-
       addHouseText(this, 'A HAUS OF VOLUMES', obj, {
         w: 63,
         h: 6.6,
         fontSize: 72,
         tracking: 8,
         opacity: 'main',
-        y: obj.position.y + 5.5,
+        y: obj.position.y,
         tag: 'left-house',
       });
+      continue;
+    }
 
-      addHouseText(this, '50 ML / 1.7 FL. OZ.', obj, {
-        w: 59,
-        h: 5.8,
-        fontSize: 64,
-        tracking: 7,
-        opacity: 'soft',
-        y: obj.position.y - 6.2,
-        tag: 'left-size',
-      });
+    // Hide ANY other legacy/supporting label that lands on the left side.
+    // This guarantees no EAU DE PARFUM, size line, code, or stray copy sits under it.
+    if (isLeftSide(obj)) {
+      obj.visible = false;
       continue;
     }
 
