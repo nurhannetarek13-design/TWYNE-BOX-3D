@@ -14,27 +14,6 @@ function sizeOf(o){
   return v;
 }
 
-function creamMap(src){
-  const im=src?.image;
-  if(!im?.width || !im?.height) return null;
-  const c=document.createElement('canvas');
-  c.width=im.width; c.height=im.height;
-  const x=c.getContext('2d');
-  x.clearRect(0,0,c.width,c.height);
-  x.fillStyle='#E7E4DD';
-  x.fillRect(0,0,c.width,c.height);
-  x.globalCompositeOperation='destination-in';
-  x.drawImage(im,0,0,c.width,c.height);
-  x.globalCompositeOperation='source-over';
-  const t=new THREE.CanvasTexture(c);
-  t.colorSpace=THREE.SRGBColorSpace;
-  t.minFilter=THREE.LinearFilter;
-  t.magFilter=THREE.LinearFilter;
-  t.generateMipmaps=false;
-  t.needsUpdate=true;
-  return t;
-}
-
 function graphiteMap(){
   const c=document.createElement('canvas');
   c.width=c.height=1024;
@@ -107,7 +86,7 @@ THREE.Group.prototype.add=function(...os){
   return A.apply(this,os);
 };
 
-await import('./gift-set-v36.js?build=54');
+await import('./gift-set-v36.js?build=55');
 THREE.Group.prototype.add=A;
 
 const gm=graphiteMap();
@@ -128,12 +107,19 @@ R.paper.forEach(o=>{
 if(R.vol) R.vol.visible=false;
 if(R.eau) R.eau.visible=false;
 
+// NEW TWYNE WORDMARK — traced from the user's supplied logo, preserving its wide spacing and proportions.
 if(R.logo){
-  R.logo.scale.set(.50,.50,1);
+  const newLogoTex=new THREE.TextureLoader().load('../assets/twyne-wordmark-new-cream.svg?v=55');
+  newLogoTex.colorSpace=THREE.SRGBColorSpace;
+  newLogoTex.minFilter=THREE.LinearFilter;
+  newLogoTex.magFilter=THREE.LinearFilter;
+  newLogoTex.generateMipmaps=false;
+  R.logo.geometry.dispose?.();
+  R.logo.geometry=new THREE.PlaneGeometry(74,13.92);
+  R.logo.scale.set(1,1,1);
   R.logo.position.z=-15.5;
   if(R.logo.material){
-    const cm=creamMap(R.logo.material.map);
-    if(cm) R.logo.material.map=cm;
+    R.logo.material.map=newLogoTex;
     R.logo.material.color?.set?.(0xffffff);
     R.logo.material.opacity=1;
     R.logo.material.transparent=true;
@@ -172,9 +158,7 @@ function addFrontText(text,w,z,fs,tr,ord){
   R.sg?.add(mesh);
 }
 
-// Keep the reference font/tracking, but make the whole line physically narrower than the TWYNE logo.
 addFrontText('VOLUME I — KENOPSIA',50,30.6,106,20,1);
-// Same face, normal spacing and clearly subordinate.
 addFrontText('EAU DE PARFUM',34,38.0,72,3,2);
 
 R.labels.forEach((l,i)=>styleTesterLabel(l,i));
