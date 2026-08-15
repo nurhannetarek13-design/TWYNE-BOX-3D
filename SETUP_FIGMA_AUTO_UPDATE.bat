@@ -67,7 +67,7 @@ echo.
 echo Creating Windows automatic update task...
 
 schtasks /Delete /TN "%TASK_NAME%" /F >nul 2>&1
-schtasks /Create /TN "%TASK_NAME%" /TR "\"%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd\"" /SC MINUTE /MO 5 /F >nul
+schtasks /Create /TN "%TASK_NAME%" /TR "cmd.exe /d /c call \"%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd\"" /SC MINUTE /MO 5 /F >nul
 if errorlevel 1 goto :task_error
 
 call "%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd"
@@ -75,7 +75,7 @@ call "%TARGET%\figma-giftset-direct\AUTO_UPDATE.cmd"
 echo.
 echo ==============================================
 echo   DONE — TWYNE IS NOW AUTO-UPDATING
- echo ==============================================
+echo ==============================================
 echo.
 echo From now on:
 echo 1. I update GitHub.
