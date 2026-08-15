@@ -54,6 +54,32 @@ function trackedTexture(text,{fontSize=100,tracking=0,weight=500,color='#E7E4DD'
   return t;
 }
 
+function editorialTexture(text,{fontSize=82,tracking=8,weight=500,color='#E7E4DD'}={}){
+  const c=document.createElement('canvas');
+  c.width=2200; c.height=400;
+  const x=c.getContext('2d');
+  x.clearRect(0,0,c.width,c.height);
+  x.fillStyle=color;
+  x.textBaseline='middle';
+  x.fontKerning='normal';
+  x.font=`${weight} ${fontSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+  const chars=[...text];
+  const widths=chars.map(ch=>x.measureText(ch).width);
+  const total=widths.reduce((a,b)=>a+b,0)+tracking*Math.max(0,chars.length-1);
+  let p=(c.width-total)/2;
+  chars.forEach((ch,i)=>{
+    x.fillText(ch,p,c.height/2);
+    p+=widths[i]+tracking;
+  });
+  const t=new THREE.CanvasTexture(c);
+  t.colorSpace=THREE.SRGBColorSpace;
+  t.minFilter=THREE.LinearFilter;
+  t.magFilter=THREE.LinearFilter;
+  t.generateMipmaps=false;
+  t.needsUpdate=true;
+  return t;
+}
+
 function styleTesterLabel(l,i){
   if(!l?.material) return;
   if(!R.labels.includes(l)) R.labels.push(l);
@@ -86,7 +112,7 @@ THREE.Group.prototype.add=function(...os){
   return A.apply(this,os);
 };
 
-await import('./gift-set-v36.js?build=55');
+await import('./gift-set-v36.js?build=56');
 THREE.Group.prototype.add=A;
 
 const gm=graphiteMap();
@@ -109,7 +135,7 @@ if(R.eau) R.eau.visible=false;
 
 // NEW TWYNE WORDMARK — traced from the user's supplied logo, preserving its wide spacing and proportions.
 if(R.logo){
-  const newLogoTex=new THREE.TextureLoader().load('../assets/twyne-wordmark-new-cream.svg?v=55');
+  const newLogoTex=new THREE.TextureLoader().load('../assets/twyne-wordmark-new-cream.svg?v=56');
   newLogoTex.colorSpace=THREE.SRGBColorSpace;
   newLogoTex.minFilter=THREE.LinearFilter;
   newLogoTex.magFilter=THREE.LinearFilter;
@@ -138,12 +164,12 @@ if(document.fonts?.load){
   ]);
 }
 
-function addFrontText(text,w,z,fs,tr,ord){
+function addEditorialText(text,w,z,fs,tr,ord){
   const h=w/(2200/400);
   const mesh=new THREE.Mesh(
     new THREE.PlaneGeometry(w,h),
     new THREE.MeshBasicMaterial({
-      map:trackedTexture(text,{fontSize:fs,tracking:tr,weight:500,color:'#E7E4DD'}),
+      map:editorialTexture(text,{fontSize:fs,tracking:tr,weight:500,color:'#E7E4DD'}),
       transparent:true,
       opacity:1,
       toneMapped:false,
@@ -158,8 +184,10 @@ function addFrontText(text,w,z,fs,tr,ord){
   R.sg?.add(mesh);
 }
 
-addFrontText('VOLUME I — KENOPSIA',50,30.6,106,20,1);
-addFrontText('EAU DE PARFUM',34,38.0,72,3,2);
+// Dries reference: small Helvetica/Neue Haas-style uppercase with generous tracking.
+addEditorialText('VOLUME I — KENOPSIA',50,30.6,84,12,1);
+// Same face, quieter and slightly tighter below.
+addEditorialText('EAU DE PARFUM',31,37.8,66,5,2);
 
 R.labels.forEach((l,i)=>styleTesterLabel(l,i));
 
