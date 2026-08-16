@@ -30,7 +30,6 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const app = document.getElementById('app');
 const scene = new THREE.Scene();
@@ -39,7 +38,7 @@ scene.background = new THREE.Color(0xe7e4dd);
 const camera = new THREE.PerspectiveCamera(28, innerWidth/innerHeight, 0.01, 100);
 camera.position.set(0.085, 0.045, 0.24);
 
-const renderer = new THREE.WebGLRenderer({antialias:true, alpha:false});
+const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -67,157 +66,115 @@ rim.position.set(-3,1,-2); scene.add(rim);
 const sample = new THREE.Group();
 scene.add(sample);
 
-// --- DIMENSIONS (metres): 55 mm overall body study, 11 mm diameter ---
 const bodyR = 0.0055;
 const bodyH = 0.048;
 const bodyY = 0.024;
 
-// inner liquid — deliberately almost colourless / very pale amber
 const liquidMat = new THREE.MeshPhysicalMaterial({
-  color:0xf3d6a2,
-  transparent:true,
-  opacity:.30,
-  roughness:.08,
-  metalness:0,
-  transmission:.42,
-  thickness:.004,
-  ior:1.36
+  color:0xf3d6a2, transparent:true, opacity:.30, roughness:.08, metalness:0,
+  transmission:.42, thickness:.004, ior:1.36
 });
 const liquid = new THREE.Mesh(new THREE.CylinderGeometry(bodyR*.79, bodyR*.79, bodyH*.69, 64), liquidMat);
 liquid.position.y = bodyY - bodyH*.115;
 sample.add(liquid);
 
-// glass vial
 const glassMat = new THREE.MeshPhysicalMaterial({
-  color:0xffffff,
-  roughness:.04,
-  metalness:0,
-  transmission:.97,
-  transparent:true,
-  opacity:.48,
-  thickness:.0018,
-  ior:1.50,
-  envMapIntensity:1.15,
-  clearcoat:1,
-  clearcoatRoughness:.03
+  color:0xffffff, roughness:.04, metalness:0, transmission:.97, transparent:true,
+  opacity:.48, thickness:.0018, ior:1.50, envMapIntensity:1.15, clearcoat:1, clearcoatRoughness:.03
 });
-const bodyGeo = new THREE.CylinderGeometry(bodyR, bodyR, bodyH, 96, 1, false);
-const body = new THREE.Mesh(bodyGeo, glassMat);
-body.position.y = bodyY;
-body.castShadow = true;
-body.receiveShadow = true;
-sample.add(body);
+const body = new THREE.Mesh(new THREE.CylinderGeometry(bodyR, bodyR, bodyH, 96), glassMat);
+body.position.y = bodyY; body.castShadow = true; body.receiveShadow = true; sample.add(body);
 
-// heavy glass base
 const base = new THREE.Mesh(new THREE.CylinderGeometry(bodyR*.98, bodyR*.98, .0021, 96), new THREE.MeshPhysicalMaterial({
   color:0xffffff, roughness:.03, transmission:.92, transparent:true, opacity:.56, thickness:.003, ior:1.5
 }));
-base.position.y = .0013;
-sample.add(base);
+base.position.y = .0013; sample.add(base);
 
-// neck
 const neck = new THREE.Mesh(new THREE.CylinderGeometry(.00325,.00345,.0068,64), glassMat);
-neck.position.y = .0513;
-sample.add(neck);
+neck.position.y = .0513; sample.add(neck);
 
-// black collar
 const black = new THREE.MeshStandardMaterial({color:0x111111,roughness:.42,metalness:.18});
 const collar = new THREE.Mesh(new THREE.CylinderGeometry(.00415,.00415,.0032,64),black);
-collar.position.y=.0551;
-sample.add(collar);
+collar.position.y=.0551; sample.add(collar);
 
-// cap — restrained matte black cylinder
 const capMat = new THREE.MeshStandardMaterial({color:0x0b0b0b,roughness:.62,metalness:.03});
 const cap = new THREE.Mesh(new THREE.CylinderGeometry(.00455,.00455,.0115,64),capMat);
-cap.position.y=.06245;
-cap.castShadow=true;
-sample.add(cap);
+cap.position.y=.06245; cap.castShadow=true; sample.add(cap);
 
-// subtle top disc
 const topDisc = new THREE.Mesh(new THREE.CylinderGeometry(.00458,.00458,.00035,64),new THREE.MeshStandardMaterial({color:0x080808,roughness:.34}));
-topDisc.position.y=.06835;
-sample.add(topDisc);
+topDisc.position.y=.06835; sample.add(topDisc);
 
-// --- transparent label sleeve ---
+// Transparent wrap label
 const labelY = 0.027;
 const labelH = 0.0215;
 const clearLabelMat = new THREE.MeshPhysicalMaterial({
-  color:0xffffff,
-  transparent:true,
-  opacity:.12,
-  roughness:.16,
-  metalness:0,
-  transmission:.76,
-  thickness:.00012,
-  ior:1.43,
-  clearcoat:.35,
-  clearcoatRoughness:.2,
-  depthWrite:false,
-  side:THREE.DoubleSide
+  color:0xffffff, transparent:true, opacity:.12, roughness:.16, metalness:0,
+  transmission:.76, thickness:.00012, ior:1.43, clearcoat:.35, clearcoatRoughness:.2,
+  depthWrite:false, side:THREE.DoubleSide
 });
 const labelSleeve = new THREE.Mesh(new THREE.CylinderGeometry(bodyR+.00011,bodyR+.00011,labelH,96,1,true),clearLabelMat);
-labelSleeve.position.y=labelY;
-labelSleeve.renderOrder=2;
-sample.add(labelSleeve);
+labelSleeve.position.y=labelY; labelSleeve.renderOrder=2; sample.add(labelSleeve);
 
-function canvasTexture(draw, w=768, h=1536){
+function canvasTexture(draw, w=1200, h=1200){
   const c=document.createElement('canvas'); c.width=w; c.height=h;
   const x=c.getContext('2d'); x.clearRect(0,0,w,h); draw(x,w,h);
-  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=renderer.capabilities.getMaxAnisotropy();
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  t.anisotropy=renderer.capabilities.getMaxAnisotropy();
   return t;
 }
 
-function textPlane(texture,w,h,y,z,rotY=0){
+function addTextPlane(texture,w,h,y,z,rotY=0){
   const mat=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
   const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);
   m.position.set(0,y,z); m.rotation.y=rotY; m.renderOrder=5; sample.add(m); return m;
 }
 
-// FRONT: TWYNE rotated vertically, printed directly on transparent stock
-const frontTex=canvasTexture((ctx,w,h)=>{
-  ctx.save();
-  ctx.translate(w*.5,h*.5);
-  ctx.rotate(-Math.PI/2);
-  ctx.textAlign='center'; ctx.textBaseline='middle';
+// FRONT — horizontal hierarchy
+const frontTex = canvasTexture((ctx,w,h)=>{
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
   ctx.fillStyle='#111111';
-  ctx.font='700 120px Arial, Helvetica, sans-serif';
-  ctx.letterSpacing='24px';
-  ctx.fillText('TWYNE',0,0);
-  ctx.restore();
-},1024,2048);
-textPlane(frontTex,.0097,.0204,labelY,bodyR+.00023,0);
 
-// BACK: tiny vertical functional copy
-const backTex=canvasTexture((ctx,w,h)=>{
-  ctx.save();
-  ctx.translate(w*.5,h*.5);
-  ctx.rotate(Math.PI/2);
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='#161616';
-  ctx.font='500 76px Arial, Helvetica, sans-serif';
-  ctx.fillText('2 ML   ·   TWYNE.COM',0,0);
-  ctx.restore();
-},1024,2048);
-const backMat=new THREE.MeshBasicMaterial({map:backTex,transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
-const backPlane=new THREE.Mesh(new THREE.PlaneGeometry(.0097,.0204),backMat);
-backPlane.position.set(0,labelY,-bodyR-.00023);
+  ctx.font='600 92px Arial, Helvetica, sans-serif';
+  ctx.fillText('TWYNE', w*.5, h*.27);
+
+  ctx.font='700 126px Arial, Helvetica, sans-serif';
+  ctx.fillText('SOTTO VOCE', w*.5, h*.52);
+
+  ctx.font='500 70px Arial, Helvetica, sans-serif';
+  ctx.fillText('EAU DE PARFUM', w*.5, h*.76);
+});
+addTextPlane(frontTex,.0102,.0198,labelY,bodyR+.00024,0);
+
+// BACK — horizontal, restrained
+const backTex = canvasTexture((ctx,w,h)=>{
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillStyle='#111111';
+
+  ctx.font='600 92px Arial, Helvetica, sans-serif';
+  ctx.fillText('TWYNE', w*.5, h*.42);
+
+  ctx.font='500 66px Arial, Helvetica, sans-serif';
+  ctx.fillText('TWYNEHAUS.COM', w*.5, h*.60);
+});
+const backMat = new THREE.MeshBasicMaterial({map:backTex,transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
+const backPlane = new THREE.Mesh(new THREE.PlaneGeometry(.0102,.0198),backMat);
+backPlane.position.set(0,labelY,-bodyR-.00024);
 backPlane.rotation.y=Math.PI;
 backPlane.renderOrder=5;
 sample.add(backPlane);
 
-// floor / soft shadow
 const floorMat=new THREE.ShadowMaterial({color:0x000000,opacity:.13});
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(.5,.5),floorMat);
 floor.rotation.x=-Math.PI/2; floor.position.y=-.0001; floor.receiveShadow=true; scene.add(floor);
 
-// faint studio backdrop geometry for nicer reflections
 const studioMat=new THREE.MeshStandardMaterial({color:0xe7e4dd,roughness:1,side:THREE.DoubleSide});
 const backdrop=new THREE.Mesh(new THREE.PlaneGeometry(.9,.9),studioMat);
 backdrop.position.set(0,.18,-.24); scene.add(backdrop);
 
 function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
 addEventListener('resize',resize);
-
 function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}
 animate();
 </script>
