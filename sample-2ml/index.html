@@ -3,71 +3,64 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>TWYNE — 2ml Sample V16</title>
+<title>TWYNE — 2ml Sample V17</title>
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e7e4dd;font-family:Arial,Helvetica,sans-serif}
-#app{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
-.ui{position:fixed;left:24px;top:22px;color:#111;pointer-events:none}.brand{font-size:12px;font-weight:700;letter-spacing:.22em}.sub{margin-top:8px;font-size:10px;letter-spacing:.16em;opacity:.55}.hint{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);font-size:9px;letter-spacing:.16em;color:#111;opacity:.42;white-space:nowrap}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e7e4dd;font-family:Arial,Helvetica,sans-serif}#app{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}.ui{position:fixed;left:24px;top:22px;color:#111;pointer-events:none}.brand{font-size:12px;font-weight:700;letter-spacing:.22em}.sub{margin-top:8px;font-size:10px;letter-spacing:.16em;opacity:.55}.hint{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);font-size:9px;letter-spacing:.16em;color:#111;opacity:.42;white-space:nowrap}
 </style>
 </head>
 <body>
-<div id="app"></div>
-<div class="ui"><div class="brand">TWYNE</div><div class="sub">2ML SAMPLE</div></div>
-<div class="hint">DRAG TO ROTATE · SCROLL TO ZOOM</div>
+<div id="app"></div><div class="ui"><div class="brand">TWYNE</div><div class="sub">2ML SAMPLE</div></div><div class="hint">DRAG TO ROTATE · SCROLL TO ZOOM</div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xe7e4dd);
-const camera=new THREE.PerspectiveCamera(28,innerWidth/innerHeight,.01,100);camera.position.set(.055,.038,.205);
+const camera=new THREE.PerspectiveCamera(28,innerWidth/innerHeight,.01,100);camera.position.set(.052,.039,.205);
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;renderer.shadowMap.enabled=true;document.getElementById('app').appendChild(renderer.domElement);
 const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(0,.034,0);controls.minDistance=.11;controls.maxDistance=.34;controls.autoRotate=false;
+scene.add(new THREE.HemisphereLight(0xffffff,0x777067,2.2));const key=new THREE.DirectionalLight(0xffffff,4.5);key.position.set(2,3,4);key.castShadow=true;scene.add(key);const fill=new THREE.DirectionalLight(0xfff6eb,1.8);fill.position.set(-3,1,-2);scene.add(fill);
 
-scene.add(new THREE.HemisphereLight(0xffffff,0x777067,2.2));
-const key=new THREE.DirectionalLight(0xffffff,4.5);key.position.set(2,3,4);key.castShadow=true;scene.add(key);
-const fill=new THREE.DirectionalLight(0xfff6eb,1.8);fill.position.set(-3,1,-2);scene.add(fill);
-
-const sample=new THREE.Group();scene.add(sample);
-const r=.0055,h=.048,y=.024,labelY=.027;
+const sample=new THREE.Group();scene.add(sample);const r=.0055,h=.048,y=.024,labelY=.027;
 const liquid=new THREE.Mesh(new THREE.CylinderGeometry(r*.78,r*.78,h*.70,64),new THREE.MeshPhysicalMaterial({color:0xf0d5a6,transparent:true,opacity:.34,roughness:.08,transmission:.35,thickness:.004,ior:1.35}));liquid.position.y=y-h*.11;sample.add(liquid);
-const glass=new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:.03,transmission:.96,transparent:true,opacity:.50,thickness:.0018,ior:1.50,clearcoat:1,clearcoatRoughness:.03});
-const body=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,96),glass);body.position.y=y;body.castShadow=true;sample.add(body);
+const glass=new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:.03,transmission:.96,transparent:true,opacity:.50,thickness:.0018,ior:1.50,clearcoat:1,clearcoatRoughness:.03});const body=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,96),glass);body.position.y=y;body.castShadow=true;sample.add(body);
 const neck=new THREE.Mesh(new THREE.CylinderGeometry(.0032,.00345,.0068,64),glass);neck.position.y=.0514;sample.add(neck);
 const collar=new THREE.Mesh(new THREE.CylinderGeometry(.0041,.0041,.0032,64),new THREE.MeshStandardMaterial({color:0x111111,roughness:.42,metalness:.15}));collar.position.y=.0551;sample.add(collar);
 const cap=new THREE.Mesh(new THREE.CylinderGeometry(.00455,.00455,.0115,64),new THREE.MeshStandardMaterial({color:0x0b0b0b,roughness:.6}));cap.position.y=.06245;sample.add(cap);
+const sleeve=new THREE.Mesh(new THREE.CylinderGeometry(r+.0001,r+.0001,.032,96,1,true),new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.09,roughness:.18,transmission:.84,thickness:.0001,ior:1.43,depthWrite:false,side:THREE.DoubleSide}));sleeve.position.y=labelY;sample.add(sleeve);
 
-const sleeve=new THREE.Mesh(new THREE.CylinderGeometry(r+.0001,r+.0001,.032,96,1,true),new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.10,roughness:.18,transmission:.84,thickness:.0001,ior:1.43,depthWrite:false,side:THREE.DoubleSide}));sleeve.position.y=labelY;sample.add(sleeve);
+function textureFromCanvas(c){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=renderer.capabilities.getMaxAnisotropy();return t}
+function addLabel(tex,z,ry){const m=new THREE.Mesh(new THREE.PlaneGeometry(.0086,.030),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}));m.position.set(0,labelY,z);m.rotation.y=ry;m.renderOrder=10;sample.add(m)}
 
-function makeTex(c){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=renderer.capabilities.getMaxAnisotropy();return t}
-function addFace(texture,z,faceY){const m=new THREE.Mesh(new THREE.PlaneGeometry(.030,.0084),new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}));m.position.set(0,labelY,z);m.rotation.y=faceY;m.rotation.z=-Math.PI/2;m.renderOrder=10;sample.add(m)}
+function makeFinalCanvas(block){
+  const out=document.createElement('canvas');out.width=900;out.height=3000;
+  const o=out.getContext('2d');o.clearRect(0,0,out.width,out.height);
+  o.save();o.translate(out.width/2,out.height/2);o.rotate(-Math.PI/2);
+  o.drawImage(block,-950,-325,1900,650);o.restore();
+  return out;
+}
 
-const logo=new Image();
-logo.onload=()=>{
- const f=document.createElement('canvas');f.width=2400;f.height=650;
- const x=f.getContext('2d');x.clearRect(0,0,f.width,f.height);x.fillStyle='#111';x.textAlign='center';x.textBaseline='middle';
- // IMPORTANT: after the plane rotates 90deg, canvas X becomes bottle vertical position.
- // Keep every element on the same canvas Y so they remain on one visible side of the vial.
- x.drawImage(logo,107,91,1834,204,1800,282,430,48);
- x.font='700 138px Arial,Helvetica,sans-serif';x.fillText('SOTTO VOCE',1200,325);
- x.font='500 58px Arial,Helvetica,sans-serif';x.fillText('EAU DE PARFUM',560,325);
- addFace(makeTex(f),r+.00030,0);
-
- const b=document.createElement('canvas');b.width=2400;b.height=650;
- const q=b.getContext('2d');q.clearRect(0,0,b.width,b.height);q.fillStyle='#111';q.textAlign='center';q.textBaseline='middle';
- q.drawImage(logo,107,91,1834,204,1620,282,430,48);
- q.font='500 62px Arial,Helvetica,sans-serif';q.fillText('TWYNEHAUS.COM',760,325);
- addFace(makeTex(b),-r-.00030,Math.PI);
-};
-logo.onerror=()=>{
- const f=document.createElement('canvas');f.width=2400;f.height=650;const x=f.getContext('2d');x.fillStyle='#111';x.textAlign='center';x.textBaseline='middle';x.font='700 92px Arial';x.fillText('TWYNE',1800,325);x.font='700 138px Arial';x.fillText('SOTTO VOCE',1200,325);x.font='500 58px Arial';x.fillText('EAU DE PARFUM',560,325);addFace(makeTex(f),r+.00030,0);
- const b=document.createElement('canvas');b.width=2400;b.height=650;const q=b.getContext('2d');q.fillStyle='#111';q.textAlign='center';q.textBaseline='middle';q.font='700 92px Arial';q.fillText('TWYNE',1620,325);q.font='500 62px Arial';q.fillText('TWYNEHAUS.COM',760,325);addFace(makeTex(b),-r-.00030,Math.PI);
-};
-logo.src='./twyne-logo.png?v=16';
+function makeFrontBlock(logo){
+  const c=document.createElement('canvas');c.width=1900;c.height=650;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.fillStyle='#111';x.textAlign='center';x.textBaseline='middle';
+  if(logo){x.drawImage(logo,107,91,1834,204,585,85,730,81)}else{x.font='700 96px Arial';x.fillText('TWYNE',950,125)}
+  x.font='700 148px Arial,Helvetica,sans-serif';x.fillText('SOTTO VOCE',950,340);
+  x.font='500 62px Arial,Helvetica,sans-serif';x.fillText('EAU DE PARFUM',950,545);
+  return c;
+}
+function makeBackBlock(logo){
+  const c=document.createElement('canvas');c.width=1900;c.height=650;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.fillStyle='#111';x.textAlign='center';x.textBaseline='middle';
+  if(logo){x.drawImage(logo,107,91,1834,204,585,150,730,81)}else{x.font='700 96px Arial';x.fillText('TWYNE',950,190)}
+  x.font='500 64px Arial,Helvetica,sans-serif';x.fillText('TWYNEHAUS.COM',950,455);
+  return c;
+}
+function buildLabels(logo){
+  addLabel(textureFromCanvas(makeFinalCanvas(makeFrontBlock(logo))),r+.00031,0);
+  addLabel(textureFromCanvas(makeFinalCanvas(makeBackBlock(logo))),-r-.00031,Math.PI);
+}
+const logo=new Image();logo.onload=()=>buildLabels(logo);logo.onerror=()=>buildLabels(null);logo.src='./twyne-logo.png?v=17';
 
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(.45,.45),new THREE.ShadowMaterial({color:0x000000,opacity:.13}));floor.rotation.x=-Math.PI/2;floor.position.y=-.0001;floor.receiveShadow=true;scene.add(floor);
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-(function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)})();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});(function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)})();
 </script>
 </body>
 </html>
