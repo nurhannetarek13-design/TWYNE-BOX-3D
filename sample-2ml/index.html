@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>TWYNE — 2ml Sample V13</title>
+<title>TWYNE — 2ml Sample V14</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e7e4dd;font-family:Arial,Helvetica,sans-serif}
 #app{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
@@ -46,23 +46,22 @@ const logo=new Image();
 logo.onload=()=>{
  const f=document.createElement('canvas');f.width=1800;f.height=760;
  const x=f.getContext('2d');x.clearRect(0,0,f.width,f.height);x.fillStyle='#111';x.textAlign='center';x.textBaseline='middle';
- // Crop away transparent padding from the source PNG: actual mark is approx x107..1941, y91..295.
- x.drawImage(logo,107,91,1834,204,560,105,680,76);
+ x.drawImage(logo,107,91,1834,204,590,220,620,69);
  x.font='700 146px Arial,Helvetica,sans-serif';x.fillText('SOTTO VOCE',900,390);
  x.font='500 64px Arial,Helvetica,sans-serif';x.fillText('EAU DE PARFUM',900,590);
  addFace(makeTex(f),r+.00028,0);
 
  const b=document.createElement('canvas');b.width=1800;b.height=760;
  const q=b.getContext('2d');q.clearRect(0,0,b.width,b.height);q.fillStyle='#111';q.textAlign='center';q.textBaseline='middle';
- q.drawImage(logo,107,91,1834,204,560,155,680,76);
+ q.drawImage(logo,107,91,1834,204,590,265,620,69);
  q.font='500 68px Arial,Helvetica,sans-serif';q.fillText('TWYNEHAUS.COM',900,505);
  addFace(makeTex(b),-r-.00028,Math.PI);
 };
 logo.onerror=()=>{
- const f=document.createElement('canvas');f.width=1800;f.height=760;const x=f.getContext('2d');x.fillStyle='#111';x.textAlign='center';x.textBaseline='middle';x.font='700 112px Arial';x.fillText('TWYNE',900,145);x.font='700 146px Arial';x.fillText('SOTTO VOCE',900,390);x.font='500 64px Arial';x.fillText('EAU DE PARFUM',900,590);addFace(makeTex(f),r+.00028,0);
- const b=document.createElement('canvas');b.width=1800;b.height=760;const q=b.getContext('2d');q.fillStyle='#111';q.textAlign='center';q.textBaseline='middle';q.font='700 112px Arial';q.fillText('TWYNE',900,180);q.font='500 68px Arial';q.fillText('TWYNEHAUS.COM',900,505);addFace(makeTex(b),-r-.00028,Math.PI);
+ const f=document.createElement('canvas');f.width=1800;f.height=760;const x=f.getContext('2d');x.fillStyle='#111';x.textAlign='center';x.textBaseline='middle';x.font='700 112px Arial';x.fillText('TWYNE',900,255);x.font='700 146px Arial';x.fillText('SOTTO VOCE',900,390);x.font='500 64px Arial';x.fillText('EAU DE PARFUM',900,590);addFace(makeTex(f),r+.00028,0);
+ const b=document.createElement('canvas');b.width=1800;b.height=760;const q=b.getContext('2d');q.fillStyle='#111';q.textAlign='center';q.textBaseline='middle';q.font='700 112px Arial';q.fillText('TWYNE',900,290);q.font='500 68px Arial';q.fillText('TWYNEHAUS.COM',900,505);addFace(makeTex(b),-r-.00028,Math.PI);
 };
-logo.src='./twyne-logo.png?v=13';
+logo.src='./twyne-logo.png?v=14';
 
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(.45,.45),new THREE.ShadowMaterial({color:0x000000,opacity:.13}));floor.rotation.x=-Math.PI/2;floor.position.y=-.0001;floor.receiveShadow=true;scene.add(floor);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
