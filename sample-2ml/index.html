@@ -1,182 +1,32 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TWYNE — 2ml Sample Landscape V4</title>
-  <style>
-    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e7e4dd;font-family:Arial,Helvetica,sans-serif}
-    #app{position:fixed;inset:0}
-    canvas{display:block;width:100%;height:100%}
-    .ui{position:fixed;left:24px;top:22px;z-index:3;color:#121212;pointer-events:none}
-    .brand{font-size:12px;font-weight:700;letter-spacing:.22em}
-    .sub{margin-top:8px;font-size:10px;letter-spacing:.16em;opacity:.56}
-    .hint{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);font-size:9px;letter-spacing:.16em;color:#121212;opacity:.42;pointer-events:none;white-space:nowrap}
-  </style>
-</head>
-<body>
-<div id="app"></div>
-<div class="ui"><div class="brand">TWYNE</div><div class="sub">2ML SAMPLE / SINGLE-LINE LANDSCAPE LABEL</div></div>
-<div class="hint">DRAG TO ROTATE · SCROLL TO ZOOM</div>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"
-  }
-}
-</script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TWYNE — 2ml Sample V6</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e7e4dd;font-family:Arial,Helvetica,sans-serif}#app{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}.ui{position:fixed;left:24px;top:22px;color:#111;pointer-events:none}.brand{font-size:12px;font-weight:700;letter-spacing:.22em}.sub{margin-top:8px;font-size:10px;letter-spacing:.16em;opacity:.55}.hint{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);font-size:9px;letter-spacing:.16em;color:#111;opacity:.42;white-space:nowrap}</style></head>
+<body><div id="app"></div><div class="ui"><div class="brand">TWYNE</div><div class="sub">2ML SAMPLE / ROTATED LABEL BLOCK</div></div><div class="hint">DRAG TO ROTATE · SCROLL TO ZOOM</div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"}}</script>
 <script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-const app = document.getElementById('app');
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xe7e4dd);
-
-const camera = new THREE.PerspectiveCamera(27, innerWidth/innerHeight, 0.01, 100);
-camera.position.set(0, 0.033, 0.235);
-
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.setSize(innerWidth,innerHeight);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-app.appendChild(renderer.domElement);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = .06;
-controls.target.set(0, 0.032, 0);
-controls.minDistance = .12;
-controls.maxDistance = .42;
-controls.autoRotate = false;
-
-scene.add(new THREE.HemisphereLight(0xffffff, 0x6c665d, 2.25));
-const key = new THREE.DirectionalLight(0xffffff, 4.5);
-key.position.set(2,3,4); key.castShadow = true; scene.add(key);
-const rim = new THREE.DirectionalLight(0xfff7ec, 2.0);
-rim.position.set(-3,1,-2); scene.add(rim);
-
-const sample = new THREE.Group();
-scene.add(sample);
-
-const bodyR = 0.0055;
-const bodyH = 0.048;
-const bodyY = 0.024;
-
-const liquidMat = new THREE.MeshPhysicalMaterial({
-  color:0xf3d6a2, transparent:true, opacity:.30, roughness:.08, metalness:0,
-  transmission:.42, thickness:.004, ior:1.36
-});
-const liquid = new THREE.Mesh(new THREE.CylinderGeometry(bodyR*.79, bodyR*.79, bodyH*.69, 64), liquidMat);
-liquid.position.y = bodyY - bodyH*.115;
-sample.add(liquid);
-
-const glassMat = new THREE.MeshPhysicalMaterial({
-  color:0xffffff, roughness:.04, metalness:0, transmission:.97, transparent:true,
-  opacity:.48, thickness:.0018, ior:1.50, envMapIntensity:1.15, clearcoat:1, clearcoatRoughness:.03
-});
-const body = new THREE.Mesh(new THREE.CylinderGeometry(bodyR, bodyR, bodyH, 96), glassMat);
-body.position.y = bodyY; body.castShadow = true; body.receiveShadow = true; sample.add(body);
-
-const base = new THREE.Mesh(new THREE.CylinderGeometry(bodyR*.98, bodyR*.98, .0021, 96), new THREE.MeshPhysicalMaterial({
-  color:0xffffff, roughness:.03, transmission:.92, transparent:true, opacity:.56, thickness:.003, ior:1.5
-}));
-base.position.y = .0013; sample.add(base);
-
-const neck = new THREE.Mesh(new THREE.CylinderGeometry(.00325,.00345,.0068,64), glassMat);
-neck.position.y = .0513; sample.add(neck);
-
-const black = new THREE.MeshStandardMaterial({color:0x111111,roughness:.42,metalness:.18});
-const collar = new THREE.Mesh(new THREE.CylinderGeometry(.00415,.00415,.0032,64),black);
-collar.position.y=.0551; sample.add(collar);
-
-const capMat = new THREE.MeshStandardMaterial({color:0x0b0b0b,roughness:.62,metalness:.03});
-const cap = new THREE.Mesh(new THREE.CylinderGeometry(.00455,.00455,.0115,64),capMat);
-cap.position.y=.06245; cap.castShadow=true; sample.add(cap);
-
-const topDisc = new THREE.Mesh(new THREE.CylinderGeometry(.00458,.00458,.00035,64),new THREE.MeshStandardMaterial({color:0x080808,roughness:.34}));
-topDisc.position.y=.06835; sample.add(topDisc);
-
-// TRUE LANDSCAPE CLEAR LABEL: very shallow band
-const labelY = 0.027;
-const labelH = 0.0052;
-const clearLabelMat = new THREE.MeshPhysicalMaterial({
-  color:0xffffff, transparent:true, opacity:.12, roughness:.16, metalness:0,
-  transmission:.76, thickness:.00012, ior:1.43, clearcoat:.35, clearcoatRoughness:.2,
-  depthWrite:false, side:THREE.DoubleSide
-});
-const labelSleeve = new THREE.Mesh(new THREE.CylinderGeometry(bodyR+.00011,bodyR+.00011,labelH,96,1,true),clearLabelMat);
-labelSleeve.position.y=labelY; labelSleeve.renderOrder=2; sample.add(labelSleeve);
-
-function canvasTexture(draw, w=2600, h=520){
-  const c=document.createElement('canvas'); c.width=w; c.height=h;
-  const x=c.getContext('2d'); x.clearRect(0,0,w,h); draw(x,w,h);
-  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
-  t.anisotropy=renderer.capabilities.getMaxAnisotropy();
-  return t;
-}
-
-function addTextPlane(texture,w,h,y,z,rotY=0){
-  const mat=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);
-  m.position.set(0,y,z); m.rotation.y=rotY; m.renderOrder=5; sample.add(m); return m;
-}
-
-// FRONT — ONE SINGLE HORIZONTAL LINE
-const frontTex = canvasTexture((ctx,w,h)=>{
-  ctx.textBaseline='middle';
-  ctx.fillStyle='#111111';
-
-  ctx.textAlign='left';
-  ctx.font='700 78px Arial, Helvetica, sans-serif';
-  ctx.fillText('TWYNE', 90, h*.50);
-
-  ctx.textAlign='center';
-  ctx.font='700 118px Arial, Helvetica, sans-serif';
-  ctx.fillText('SOTTO VOCE', w*.54, h*.50);
-
-  ctx.textAlign='right';
-  ctx.font='500 56px Arial, Helvetica, sans-serif';
-  ctx.fillText('EAU DE PARFUM', w-90, h*.50);
-});
-addTextPlane(frontTex,.0109,.0028,labelY,bodyR+.00024,0);
-
-// BACK — ONE SINGLE HORIZONTAL LINE
-const backTex = canvasTexture((ctx,w,h)=>{
-  ctx.textBaseline='middle';
-  ctx.fillStyle='#111111';
-  ctx.textAlign='left';
-  ctx.font='700 78px Arial, Helvetica, sans-serif';
-  ctx.fillText('TWYNE', 110, h*.50);
-  ctx.textAlign='right';
-  ctx.font='500 62px Arial, Helvetica, sans-serif';
-  ctx.fillText('TWYNEHAUS.COM', w-110, h*.50);
-});
-const backMat = new THREE.MeshBasicMaterial({map:backTex,transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
-const backPlane = new THREE.Mesh(new THREE.PlaneGeometry(.0109,.0028),backMat);
-backPlane.position.set(0,labelY,-bodyR-.00024);
-backPlane.rotation.y=Math.PI;
-backPlane.renderOrder=5;
-sample.add(backPlane);
-
-const floorMat=new THREE.ShadowMaterial({color:0x000000,opacity:.13});
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(.5,.5),floorMat);
-floor.rotation.x=-Math.PI/2; floor.position.y=-.0001; floor.receiveShadow=true; scene.add(floor);
-
-const studioMat=new THREE.MeshStandardMaterial({color:0xe7e4dd,roughness:1,side:THREE.DoubleSide});
-const backdrop=new THREE.Mesh(new THREE.PlaneGeometry(.9,.9),studioMat);
-backdrop.position.set(0,.18,-.24); scene.add(backdrop);
-
-function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
-addEventListener('resize',resize);
-function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}
-animate();
-</script>
-</body>
-</html>
+import * as THREE from 'three'; import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xe7e4dd);
+const camera=new THREE.PerspectiveCamera(27,innerWidth/innerHeight,.01,100);camera.position.set(0,.034,.235);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=true;document.getElementById('app').appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(0,.032,0);controls.autoRotate=false;controls.minDistance=.12;controls.maxDistance=.42;
+scene.add(new THREE.HemisphereLight(0xffffff,0x6c665d,2.25));const key=new THREE.DirectionalLight(0xffffff,4.5);key.position.set(2,3,4);key.castShadow=true;scene.add(key);const rim=new THREE.DirectionalLight(0xfff7ec,2);rim.position.set(-3,1,-2);scene.add(rim);
+const sample=new THREE.Group();scene.add(sample);const bodyR=.0055,bodyH=.048,bodyY=.024;
+const glass=new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:.04,transmission:.97,transparent:true,opacity:.48,thickness:.0018,ior:1.5,clearcoat:1});
+const liquid=new THREE.Mesh(new THREE.CylinderGeometry(bodyR*.79,bodyR*.79,bodyH*.69,64),new THREE.MeshPhysicalMaterial({color:0xf3d6a2,transparent:true,opacity:.3,roughness:.08,transmission:.42,thickness:.004,ior:1.36}));liquid.position.y=bodyY-bodyH*.115;sample.add(liquid);
+const body=new THREE.Mesh(new THREE.CylinderGeometry(bodyR,bodyR,bodyH,96),glass);body.position.y=bodyY;body.castShadow=true;sample.add(body);
+const base=new THREE.Mesh(new THREE.CylinderGeometry(bodyR*.98,bodyR*.98,.0021,96),glass);base.position.y=.0013;sample.add(base);
+const neck=new THREE.Mesh(new THREE.CylinderGeometry(.00325,.00345,.0068,64),glass);neck.position.y=.0513;sample.add(neck);
+const collar=new THREE.Mesh(new THREE.CylinderGeometry(.00415,.00415,.0032,64),new THREE.MeshStandardMaterial({color:0x111111,roughness:.42,metalness:.18}));collar.position.y=.0551;sample.add(collar);
+const cap=new THREE.Mesh(new THREE.CylinderGeometry(.00455,.00455,.0115,64),new THREE.MeshStandardMaterial({color:0x0b0b0b,roughness:.62}));cap.position.y=.06245;sample.add(cap);
+const top=new THREE.Mesh(new THREE.CylinderGeometry(.00458,.00458,.00035,64),new THREE.MeshStandardMaterial({color:0x080808,roughness:.34}));top.position.y=.06835;sample.add(top);
+const labelY=.027,labelH=.028;
+const sleeve=new THREE.Mesh(new THREE.CylinderGeometry(bodyR+.00011,bodyR+.00011,labelH,96,1,true),new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.10,roughness:.16,transmission:.80,thickness:.00012,ior:1.43,clearcoat:.3,depthWrite:false,side:THREE.DoubleSide}));sleeve.position.y=labelY;sample.add(sleeve);
+function makeCanvas(w=1800,h=760){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+function tex(c){const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=renderer.capabilities.getMaxAnisotropy();return t}
+function addPlane(t,w,h,y,z,ry,rz){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}));m.position.set(0,y,z);m.rotation.y=ry;m.rotation.z=rz;m.renderOrder=5;sample.add(m)}
+const logo=new Image();logo.src='data:image/png;base64,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';
+logo.onload=()=>{const c=makeCanvas();const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.fillStyle='#111';x.textAlign='center';x.textBaseline='middle';const targetW=430,targetH=48;x.drawImage(logo,(c.width-targetW)/2,86,targetW,targetH);x.font='700 132px Arial, Helvetica, sans-serif';x.fillText('SOTTO VOCE',c.width/2,360);x.font='500 62px Arial, Helvetica, sans-serif';x.fillText('EAU DE PARFUM',c.width/2,575);addPlane(tex(c),.022,.0092,labelY,bodyR+.00025,0,-Math.PI/2);const b=makeCanvas();const bx=b.getContext('2d');bx.clearRect(0,0,b.width,b.height);bx.fillStyle='#111';bx.textAlign='center';bx.textBaseline='middle';bx.drawImage(logo,(b.width-targetW)/2,190,targetW,targetH);bx.font='500 64px Arial, Helvetica, sans-serif';bx.fillText('TWYNEHAUS.COM',b.width/2,520);addPlane(tex(b),.022,.0092,labelY,-bodyR-.00025,Math.PI,Math.PI/2)};
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(.5,.5),new THREE.ShadowMaterial({color:0x000000,opacity:.13}));floor.rotation.x=-Math.PI/2;floor.position.y=-.0001;floor.receiveShadow=true;scene.add(floor);
+const backdrop=new THREE.Mesh(new THREE.PlaneGeometry(.9,.9),new THREE.MeshStandardMaterial({color:0xe7e4dd,roughness:1,side:THREE.DoubleSide}));backdrop.position.set(0,.18,-.24);scene.add(backdrop);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});(function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)})();
+</script></body></html>
